@@ -101,7 +101,21 @@
   \footnote{which could be improved by using multiple trackers, but it is still not as \emph{distributed}}
   To overcome this problem, nowadays \href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
   use \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based \href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
-  aka \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}.
+  aka \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}. 
+  Basically each peer becomes a distributed tracker, and you stop relying on a single server to find other peers.
+  This way even if all trackers become offline, you still will be able to find other peers on the internet.
+  I recommend watching \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} for more in-depth explanation.
+
+  \href{https://radicle.xyz/}{Radicle} is another project that aims to bring
+  p2p to \href{https://en.wikipedia.org/wiki/Git}{Git version control}
+  which by itself is distributed, but since it is cumbersome to colaborate
+  in decentralized way, people often use centralized \href{https://en.wikipedia.org/wiki/Forge_(software)}{servers or \emph{forges}}
+  like \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
+  Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood}
+  which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
+  For example, imagine you are connected to peer A, but want to connect to peer B
+
+  % DHT in a nutshell https://www.youtube.com/watch?v=1wTucsUm64s
 
 
   % https://en.wikipedia.org/wiki/Peer_exchange
