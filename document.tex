@@ -113,13 +113,27 @@
   like \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
   Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood}
   which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
-  For example, imagine you are connected to peer A, but want to connect to peer B
+  For example, imagine this connection between peers: 
+  
+  $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
 
-  % DHT in a nutshell https://www.youtube.com/watch?v=1wTucsUm64s
+  So, peer A wants to connect to peer D, but does not know its address. 
+  Peer A \emph{gossips} to peer B, peer B gossips to peer C, and finally peer C returns
+  response back to peer A. This example shows linear propagation, but in reality a gossip request
+  propagates through entire network simultaneosly through multiple peers, and each peer stores unique ID
+  of a gossip request to ignore it next time to prevent a DDoS. This way even without having a direct contact
+  with peer D, peer A can request information from it.
 
+  But also after researching watching the \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} video
+  I also have started watching other videos from channel \href{https://www.youtube.com/channel/UCdWMU1dBMmB4SrMokGI4jvA}{number 0},
+  and found out their video \href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{introducing iroh}, 
+  a library written in \href{https://rust-lang.org/}{Rust} that does P2P connection between peers effortlessly,
+  and it just works. After researching this library, it points almost all checks for me, and I would totally use it
+  for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
 
-  % https://en.wikipedia.org/wiki/Peer_exchange
-  % https://en.wikipedia.org/wiki/Mainline_DHT
+  But I am sure I will be taking a lot of inspiration from existing solutions, 
+  but I won't spend a lot of time implementing perfect protocol, since there are already more sane
+  options developed and implemented by much more professional groups than me alone.
 
 
   \section{Planning} \label{planning}
@@ -133,6 +147,8 @@
   \end{enumerate}
 
   \subsection{Core functionality} \label{corefunctionality}
+
+  
 
  
   \newpage
