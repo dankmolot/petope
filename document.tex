@@ -131,29 +131,59 @@
   and it just works. After researching this library, it points almost all checks for me, and I would totally use it
   for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
 
-  But I am sure I will be taking a lot of inspiration from existing solutions, 
-  but I won't spend a lot of time implementing perfect protocol, since there are already more sane
-  options developed and implemented by much more professional groups than me alone.
-
 
   \section{Planning} \label{planning}
 
-  Before starting any implementation, 
-  I need to decide important choices in 
-  how I will be developing my own VPN:
-  \begin{enumerate}
-    \item \nameref{corefunctionality}
-    \item 
-  \end{enumerate}
+  First of all, I am certain that I won't be fully developing \emph{my own} protocol,
+  since it would require to do extensive work on it. 
+  I plan on using UDP since it would be easier to do \href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching},
+  but at the same time I would be required to work on 
+  \href{https://www.reddit.com/r/networking/comments/a8c42z/}{delivery reliability}
+  and \href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{rate controlling},
+  which I am certain I won't be able to do in such small time window for my diploma work.
 
   \subsection{Core functionality} \label{corefunctionality}
 
+  After you first launch the app, a crypto key-pair is generated. 
+  Public key is then used as your identifier. 
+  So, to connect both peers together, you just put respective identifier to each peer,
+  they automatically discover each other and connect. You don't have to put an endpoint to connect,
+  everything will be handled automatically as it works in iroh.
   
+  About IP addresses, if nothing is specified, then they would be cryptographically generated
+  from identity, otherwise as specified in config.
 
- 
+  Also connection failures will be handled on background, if connection to a peer can't be made,
+  then constant retries will be done. This also applies to network changes, like Wireguard does it,
+  if an IP of one peer changes, then another peer must send packets to a new destination.
+
+  \subsection{Core choices}
+  For programming language I choose Rust, since it is used by iroh which I plan using
+  for my final application.
+
+  As for protocol, I will be using UDP and then QUIC, since I believe for the start it would
+  be easier to deal with more barebones protocol. But I want to try NAT hole-punching with tcp too,
+  to see if it is even posssible.
+
+  About cryptography, I choose \href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{ed25519}
+  since I see it is widely used in my ssh keys, Wireguard and iroh too. For symmetric cryptography
+  I would use \href{ChaCha20}{https://en.wikipedia.org/wiki/ChaCha20-Poly1305} since after researching
+  \href{https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/}{Reddit},
+  \href{https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed}{stackexchange}
+  and \href{https://nordpass.com/features/xchacha20-encryption/}{NordPass}
+  I can say that ChaCha20 would be better general choice. 
+  For hashing \href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{blake3}
+  and \href{https://en.wikipedia.org/wiki/SHA-2}{SHA2} sound like a sane choice.
+
+  And that's all I think for now, now it is finally time to do some programming!
+
+
   \newpage
+  \section{Real shit}
+  YEEEEE
 
 
+  \newpage
   \section*{Sources}
   \begin{itemize}
     \item \url{https://yggdrasil-network.github.io/implementation.html}
@@ -162,9 +192,5 @@
     \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
   \end{itemize}
 
-  % $ https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/
-  % $ https://crypto.stackexchange.com/questions/79518/is-xchacha20-poly1305-quantum-resistant
-  % $ https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed
-  % https://nordpass.com/features/xchacha20-encryption/
 
 \end{document}
