@@ -2,195 +2,261 @@
 
 \usepackage{hyperref}
 \usepackage{xurl}
+\usepackage{minted}
+\usepackage{graphicx}
+\graphicspath{ {./docassets} }
+
+\setminted{
+  linenos,
+  breaklines,
+  frame=lines,
+  framesep=2mm
+}
 
 \title{petope - a VPN development project}
 \author{Retro}
 \date{2026}
 
 \begin{document}
-  \maketitle
+\maketitle
 
-  \newpage
-
-
-  \tableofcontents
-
-  \newpage
+\newpage
 
 
-  \addcontentsline{toc}{section}{Introduction}
-  \section*{Introduction}
+\tableofcontents
 
-  When someone asks how can they connect to their server at home, 
-  for example on \href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit,
-  I often see that \href{https://tailscale.com/}{Tailscale} is suggested.
-
-  Why you may ask? Well to connect to your own server is not as easy task as 
-  to connect normal public facing server. 
-  Most of home networks are behind NAT with periodically changing IPv4 address
-  \href{https://en.wikipedia.org/wiki/IPv4_address_exhaustion}{since we don't have enough IPv4 addresses},
-  and there are firewalls that prevent access from outside.
-  
-  In some cases you don't even have public IPv4 address, 
-  since ISP provided may use \href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT} 
-  which makes connection from the internet impossible even if you use \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS}
-  and open ports on your router.
-
-  And most of these problems are solved by Tailscale! 
-  When you start a Tailscale application, it connects to a \href{https://tailscale.com/docs/concepts/control-data-planes}{control plane}
-  which coordinates your Tailscale network (known as \href{https://tailscale.com/docs/concepts/tailnet}{tailnet}),
-  tells you which devices are in it, their internal addresses, public key, manages access to each device
-  and helps you with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal} 
-  so you can even connect directly to your server.
-  Instead of classic VPN structure where you connect to relay server to access internal subnet
-  you connect to each of your servers directly, thus cutting a middle man and an additional latency
-  and single point of failure\footnote{there still a single point of failure, as tailnet is managed by control plane instead of relay server}.
-  And since all clients in the network connect to each other directly, 
-  it is called a \href{https://en.wikipedia.org/wiki/Mesh_networking}{Mesh VPN}.
-
-  So, with Tailscale you just connect your device to your tailnet, and you can just to your other devices by an address. 
-  No need to add peers to each device, open ports, manage routing. Plug-n-play solution that just works.
-
-  Also it makes a great solution when you want to play with your friends together,
-  but there is much simpler to use alternative named \href{https://www.radmin-vpn.com/}{Radmin VPN},
-  which has somewhat similiar functionality, but is proprietary, and I just don't like it.
-
-  So, after being amazed by how Tailscale works internally, I want to learn by
-  creating my own VPN solution, learn from my mistakes and while developing everything needed,
-  and maybe even create something for gamers around the world to use to play together.
-  And I am totally okay if I won't be able to handle such project, I am sure I will learn a lot of stuff!
-
-  \newpage
+\newpage
 
 
-  \section{Researching existing solutions} \label{existingsolutions}
+\addcontentsline{toc}{section}{Introduction}
+\section*{Introduction}
 
-  Since I like \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self hosting}
-  different stuff on my servers, I also like to have control of my data,
-  particulary don't give a third-party control to it. 
-  That's why I don't fully enjoy Tailscale and Radmin VPN solutions:
-  \begin{itemize}
-    \item Radmin VPN is fully proprietary, so they control the server- and client-side.
-          There is nothing stopping them from adding collecting data or even stealing from my PC,
-          or adding unauthorized device to my network.
-    \item Tailscale has open-source client, but control-plane is fully proprietary and controls
-          how client operates. In case of its compomise, your connected devices are fully open
-          unless you have configured a firewall. But I trust Tailscale company much more,
-          and it feels like a fair trade of security and convinience.
-  \end{itemize}
+When someone asks how can they connect to their server at home,
+for example on \href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit,
+I often see that \href{https://tailscale.com/}{Tailscale} is suggested.
 
-  But projects like \href{https://syncthing.net/}{Syncthing} and \href{https://yggdrasil-network.github.io/}{Yggdrasil}
-  inspire me to create something more decentralized, where each device in control of to whom to trust,
-  and don't rely on single server which commands to whom he can connect and how.
+Why you may ask? Well to connect to your own server is not as easy task as
+to connect normal public facing server.
+Most of home networks are behind NAT with periodically changing IPv4 address
+\href{https://en.wikipedia.org/wiki/IPv4_address_exhaustion}{since we don't have enough IPv4 addresses},
+and there are firewalls that prevent access from outside.
 
-  I really liked Yggdrasil approach to the network -
-  each client is also a server, and an IPv6 address of a client also represents his public key.
-  This way when you send a packet to an IPv6 address, you can already encrypt message
-  by using the address, and only client who has right private key can decrypt it.
-  It is very cool idea since without a single authority you can be sure
-  that only correct recipient can decrypt and see your messages, and other peers
-  in the network relay the message until it gets to the right recipient.
-  Decentralization power, hell yeah!
+In some cases you don't even have public IPv4 address,
+since ISP provided may use \href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}
+which makes connection from the internet impossible even if you use \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS}
+and open ports on your router.
 
-  But without a central server there is no way to find a way how to connect to a peer on the internet. 
-  \href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent} 
-  in \href{https://torrentfreak.com/bittorrents-dht-turns-10-years-old-150607/}{old days (before 2005)}
-  used \href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}
-  to find other peers for a torrent you want to download. 
-  The problem is that \emph{distributed file-sharing} relies on \emph{a central server}.
-  \footnote{which could be improved by using multiple trackers, but it is still not as \emph{distributed}}
-  To overcome this problem, nowadays \href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
-  use \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based \href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
-  aka \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}. 
-  Basically each peer becomes a distributed tracker, and you stop relying on a single server to find other peers.
-  This way even if all trackers become offline, you still will be able to find other peers on the internet.
-  I recommend watching \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} for more in-depth explanation.
+And most of these problems are solved by Tailscale!
+When you start a Tailscale application, it connects to a \href{https://tailscale.com/docs/concepts/control-data-planes}{control plane}
+which coordinates your Tailscale network (known as \href{https://tailscale.com/docs/concepts/tailnet}{tailnet}),
+tells you which devices are in it, their internal addresses, public key, manages access to each device
+and helps you with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal}
+so you can even connect directly to your server.
+Instead of classic VPN structure where you connect to relay server to access internal subnet
+you connect to each of your servers directly, thus cutting a middle man and an additional latency
+and single point of failure\footnote{there still a single point of failure, as tailnet is managed by control plane instead of relay server}.
+And since all clients in the network connect to each other directly,
+it is called a \href{https://en.wikipedia.org/wiki/Mesh_networking}{Mesh VPN}.
 
-  \href{https://radicle.xyz/}{Radicle} is another project that aims to bring
-  p2p to \href{https://en.wikipedia.org/wiki/Git}{Git version control}
-  which by itself is distributed, but since it is cumbersome to colaborate
-  in decentralized way, people often use centralized \href{https://en.wikipedia.org/wiki/Forge_(software)}{servers or \emph{forges}}
-  like \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
-  Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood}
-  which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
-  For example, imagine this connection between peers: 
-  
-  $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
+So, with Tailscale you just connect your device to your tailnet, and you can just to your other devices by an address.
+No need to add peers to each device, open ports, manage routing. Plug-n-play solution that just works.
 
-  So, peer A wants to connect to peer D, but does not know its address. 
-  Peer A \emph{gossips} to peer B, peer B gossips to peer C, and finally peer C returns
-  response back to peer A. This example shows linear propagation, but in reality a gossip request
-  propagates through entire network simultaneosly through multiple peers, and each peer stores unique ID
-  of a gossip request to ignore it next time to prevent a DDoS. This way even without having a direct contact
-  with peer D, peer A can request information from it.
+Also it makes a great solution when you want to play with your friends together,
+but there is much simpler to use alternative named \href{https://www.radmin-vpn.com/}{Radmin VPN},
+which has somewhat similiar functionality, but is proprietary, and I just don't like it.
 
-  But also after researching watching the \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} video
-  I also have started watching other videos from channel \href{https://www.youtube.com/channel/UCdWMU1dBMmB4SrMokGI4jvA}{number 0},
-  and found out their video \href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{introducing iroh}, 
-  a library written in \href{https://rust-lang.org/}{Rust} that does P2P connection between peers effortlessly,
-  and it just works. After researching this library, it points almost all checks for me, and I would totally use it
-  for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
+So, after being amazed by how Tailscale works internally, I want to learn by
+creating my own VPN solution, learn from my mistakes and while developing everything needed,
+and maybe even create something for gamers around the world to use to play together.
+And I am totally okay if I won't be able to handle such project, I am sure I will learn a lot of stuff!
+
+\newpage
 
 
-  \section{Planning} \label{planning}
+\section{Researching existing solutions} \label{existingsolutions}
 
-  First of all, I am certain that I won't be fully developing \emph{my own} protocol,
-  since it would require to do extensive work on it. 
-  I plan on using UDP since it would be easier to do \href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching},
-  but at the same time I would be required to work on 
-  \href{https://www.reddit.com/r/networking/comments/a8c42z/}{delivery reliability}
-  and \href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{rate controlling},
-  which I am certain I won't be able to do in such small time window for my diploma work.
+Since I like \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self hosting}
+different stuff on my servers, I also like to have control of my data,
+particulary don't give a third-party control to it.
+That's why I don't fully enjoy Tailscale and Radmin VPN solutions:
+\begin{itemize}
+  \item Radmin VPN is fully proprietary, so they control the server- and client-side.
+        There is nothing stopping them from adding collecting data or even stealing from my PC,
+        or adding unauthorized device to my network.
+  \item Tailscale has open-source client, but control-plane is fully proprietary and controls
+        how client operates. In case of its compomise, your connected devices are fully open
+        unless you have configured a firewall. But I trust Tailscale company much more,
+        and it feels like a fair trade of security and convinience.
+\end{itemize}
 
-  \subsection{Core functionality} \label{corefunctionality}
+But projects like \href{https://syncthing.net/}{Syncthing} and \href{https://yggdrasil-network.github.io/}{Yggdrasil}
+inspire me to create something more decentralized, where each device in control of to whom to trust,
+and don't rely on single server which commands to whom he can connect and how.
 
-  After you first launch the app, a crypto key-pair is generated. 
-  Public key is then used as your identifier. 
-  So, to connect both peers together, you just put respective identifier to each peer,
-  they automatically discover each other and connect. You don't have to put an endpoint to connect,
-  everything will be handled automatically as it works in iroh.
-  
-  About IP addresses, if nothing is specified, then they would be cryptographically generated
-  from identity, otherwise as specified in config.
+I really liked Yggdrasil approach to the network -
+each client is also a server, and an IPv6 address of a client also represents his public key.
+This way when you send a packet to an IPv6 address, you can already encrypt message
+by using the address, and only client who has right private key can decrypt it.
+It is very cool idea since without a single authority you can be sure
+that only correct recipient can decrypt and see your messages, and other peers
+in the network relay the message until it gets to the right recipient.
+Decentralization power, hell yeah!
 
-  Also connection failures will be handled on background, if connection to a peer can't be made,
-  then constant retries will be done. This also applies to network changes, like Wireguard does it,
-  if an IP of one peer changes, then another peer must send packets to a new destination.
+But without a central server there is no way to find a way how to connect to a peer on the internet.
+\href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent}
+in \href{https://torrentfreak.com/bittorrents-dht-turns-10-years-old-150607/}{old days (before 2005)}
+used \href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}
+to find other peers for a torrent you want to download.
+The problem is that \emph{distributed file-sharing} relies on \emph{a central server}.
+\footnote{which could be improved by using multiple trackers, but it is still not as \emph{distributed}}
+To overcome this problem, nowadays \href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
+use \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based \href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
+aka \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}.
+Basically each peer becomes a distributed tracker, and you stop relying on a single server to find other peers.
+This way even if all trackers become offline, you still will be able to find other peers on the internet.
+I recommend watching \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} for more in-depth explanation.
 
-  \subsection{Core choices}
-  For programming language I choose Rust, since it is used by iroh which I plan using
-  for my final application.
+\href{https://radicle.xyz/}{Radicle} is another project that aims to bring
+p2p to \href{https://en.wikipedia.org/wiki/Git}{Git version control}
+which by itself is distributed, but since it is cumbersome to colaborate
+in decentralized way, people often use centralized \href{https://en.wikipedia.org/wiki/Forge_(software)}{servers or \emph{forges}}
+like \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
+Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood}
+which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
+For example, imagine this connection between peers:
 
-  As for protocol, I will be using UDP and then QUIC, since I believe for the start it would
-  be easier to deal with more barebones protocol. But I want to try NAT hole-punching with tcp too,
-  to see if it is even posssible.
+$$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
 
-  About cryptography, I choose \href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{ed25519}
-  since I see it is widely used in my ssh keys, Wireguard and iroh too. For symmetric cryptography
-  I would use \href{ChaCha20}{https://en.wikipedia.org/wiki/ChaCha20-Poly1305} since after researching
-  \href{https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/}{Reddit},
-  \href{https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed}{stackexchange}
-  and \href{https://nordpass.com/features/xchacha20-encryption/}{NordPass}
-  I can say that ChaCha20 would be better general choice. 
-  For hashing \href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{blake3}
-  and \href{https://en.wikipedia.org/wiki/SHA-2}{SHA2} sound like a sane choice.
+So, peer A wants to connect to peer D, but does not know its address.
+Peer A \emph{gossips} to peer B, peer B gossips to peer C, and finally peer C returns
+response back to peer A. This example shows linear propagation, but in reality a gossip request
+propagates through entire network simultaneosly through multiple peers, and each peer stores unique ID
+of a gossip request to ignore it next time to prevent a DDoS. This way even without having a direct contact
+with peer D, peer A can request information from it.
 
-  And that's all I think for now, now it is finally time to do some programming!
-
-
-  \newpage
-  \section{Real shit}
-  YEEEEE
+But also after researching watching the \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} video
+I also have started watching other videos from channel \href{https://www.youtube.com/channel/UCdWMU1dBMmB4SrMokGI4jvA}{number 0},
+and found out their video \href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{introducing iroh},
+a library written in \href{https://rust-lang.org/}{Rust} that does P2P connection between peers effortlessly,
+and it just works. After researching this library, it points almost all checks for me, and I would totally use it
+for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
 
 
-  \newpage
-  \section*{Sources}
-  \begin{itemize}
-    \item \url{https://yggdrasil-network.github.io/implementation.html}
-    \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}
-    \item \url{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}
-    \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
-  \end{itemize}
+\section{Planning} \label{planning}
+
+First of all, I am certain that I won't be fully developing \emph{my own} protocol,
+since it would require to do extensive work on it.
+I plan on using UDP since it would be easier to do \href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching},
+but at the same time I would be required to work on
+\href{https://www.reddit.com/r/networking/comments/a8c42z/}{delivery reliability}
+and \href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{rate controlling},
+which I am certain I won't be able to do in such small time window for my diploma work.
+
+\subsection{Core functionality} \label{corefunctionality}
+
+After you first launch the app, a crypto key-pair is generated.
+Public key is then used as your identifier.
+So, to connect both peers together, you just put respective identifier to each peer,
+they automatically discover each other and connect. You don't have to put an endpoint to connect,
+everything will be handled automatically as it works in iroh.
+
+About IP addresses, if nothing is specified, then they would be cryptographically generated
+from identity, otherwise as specified in config.
+
+Also connection failures will be handled on background, if connection to a peer can't be made,
+then constant retries will be done. This also applies to network changes, like Wireguard does it,
+if an IP of one peer changes, then another peer must send packets to a new destination.
+
+\subsection{Core choices}
+For programming language I choose Rust, since it is used by iroh which I plan using
+for my final application.
+
+As for protocol, I will be using UDP and then QUIC, since I believe for the start it would
+be easier to deal with more barebones protocol. But I want to try NAT hole-punching with tcp too,
+to see if it is even posssible.
+
+About cryptography, I choose \href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{ed25519}
+since I see it is widely used in my ssh keys, Wireguard and iroh too. For symmetric cryptography
+I would use \href{ChaCha20}{https://en.wikipedia.org/wiki/ChaCha20-Poly1305} since after researching
+\href{https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/}{Reddit},
+\href{https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed}{stackexchange}
+and \href{https://nordpass.com/features/xchacha20-encryption/}{NordPass}
+I can say that ChaCha20 would be better general choice.
+For hashing \href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{blake3}
+and \href{https://en.wikipedia.org/wiki/SHA-2}{SHA2} sound like a sane choice.
+
+And that's all I think for now, now it is finally time to do some programming!
+
+
+\newpage
+\section{Simple UDP server/client}
+
+As my starting point I choose to look into \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation about udp socket},
+and wrote following code:
+
+\begin{minted}{rust}
+fn server() {
+    let socket = UdpSocket::bind("127.0.0.1:3333").unwrap();
+
+    let mut buf = [0; 32];
+    let (amt, src) = socket.recv_from(&mut buf).unwrap();
+
+    let buf = &mut buf[..amt];
+
+    println!(
+        "received {} from {}",
+        str::from_utf8(buf).unwrap_or("raw bytes"),
+        src
+    );
+
+    buf.reverse();
+    socket.send_to(buf, &src).unwrap();
+}
+
+fn client() {
+    let socket = UdpSocket::bind("127.0.0.1:3334").unwrap();
+    socket.connect("127.0.0.1:3333").unwrap();
+    socket.send("hello world".as_bytes()).unwrap();
+
+    let mut buf = [0; 32];
+    let (amt, src) = socket.recv_from(&mut buf).unwrap();
+
+    let buf = &mut buf[..amt];
+
+    println!(
+        "received {} from {}",
+        str::from_utf8(buf).unwrap_or("raw bytes"),
+        src
+    );
+}
+\end{minted}
+
+% \newpage
+
+Aand I get this after running both server and the client:
+
+\begin{center}
+  \includegraphics[width=\textwidth]{1/server.png}
+  \includegraphics[width=\textwidth]{1/client.png}
+\end{center}
+
+As you can see, I got a message sent from a client to the server,
+and server replied with reversed message.
+Now it is time to do some UDP hole punching!
+
+\section{Adding hole punching}
+
+
+
+
+\newpage
+\section*{Sources}
+\begin{itemize}
+  \item \url{https://yggdrasil-network.github.io/implementation.html}
+  \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}
+  \item \url{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}
+  \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
+\end{itemize}
 
 
 \end{document}

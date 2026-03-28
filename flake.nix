@@ -11,13 +11,18 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        tex = (pkgs.texliveSmall.withPackages (ps: with ps; [
-          # https://github.com/James-Yu/LaTeX-Workshop/wiki/Install#installation
-          latexmk # making files from latex
-          chktex # linting
-          latexindent # formatting
-          xurl # \url line breaking
-        ]));
+        tex = (
+          pkgs.texliveSmall.withPackages (
+            ps: with ps; [
+              # https://github.com/James-Yu/LaTeX-Workshop/wiki/Install#installation
+              latexmk # making files from latex
+              chktex # linting
+              latexindent # formatting
+              xurl # \url line breaking
+              minted # for code highlighting
+            ]
+          )
+        );
       in
       {
         devShells.default = pkgs.mkShellNoCC {
