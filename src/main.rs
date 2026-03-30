@@ -1,32 +1,36 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
+
+mod discovery;
 
 /// My experiments with udp connection
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Args {
+struct Cli {
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Connect {},
-    Discovery {},
+    Connect(ConnectArgs),
+    Discovery(discovery::DiscoveryArgs),
+}
+
+#[derive(Args, Debug)]
+struct ConnectArgs {
+    target: String,
 }
 
 fn main() {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    match &args.command {
-        Commands::Connect {} => return connect(args),
-        Commands::Discovery {} => return discovery(args),
+    match cli.command {
+        Commands::Connect(args) => connect(args),
+        Commands::Discovery(args) => discovery::main(args),
     }
 }
 
-fn connect(args: Args) {
-    println!("connect")
-}
-
-fn discovery(args: Args) {
-    println!("discovery")
+fn connect(args: ConnectArgs) {
+    println!("connect");
+    dbg!(args);
 }
