@@ -125,7 +125,7 @@ impl DiscoveryClient {
             .map(|v| String::from(v.trim()))
             .map_err(|_| Error::from(io::ErrorKind::InvalidData))?;
 
-        println!("{} -> {}", self.addr, data.as_str());
+        // println!("{} -> {}", self.addr, data.as_str());
 
         Ok(data)
     }
@@ -133,7 +133,7 @@ impl DiscoveryClient {
     fn send(&self, socket: &UdpSocket, args: &[&str]) -> io::Result<()> {
         let result = args.join("|");
         socket.send(result.as_bytes())?;
-        println!("{} -> {}", result.as_str(), self.addr);
+        // println!("{} -> {}", result.as_str(), self.addr);
         Ok(())
     }
 
