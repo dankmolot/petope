@@ -250,12 +250,56 @@ Now that we can connect via UDP, we need to replace an IP address with an identi
 For this to work, some sort of a discovery server needs to be in place, which
 will tell what IP addresses an identifactor has.
 
+\subsection{Discovery server}
+
 My own implementation will use same UDP protocol,
 and messages will consist of simple text strings in format of:
 \texttt{command|arguments}.
 
-You can see an implementation of discovery server on commit
-\href{https://github.com/dankmolot/petope/tree/ada754c522e47c6b43f127ef1a3b6b2a6b7bc2c2}{ada754}
+When a discovery server receives a command, it also receives a source address,
+this way after receiving \texttt{register|node id} command discovery server
+can save source address like: \mintinline{js}|nodes["node id"] = "source address"|
+in a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
+
+\subsection{A node/peer}
+
+A node will just have to register itself on the discovery server, and then retrieve an
+address of a node it want to connect to via its node id.
+Put this algorithm into a loop, which registers itself, finds target address and sends a message to it.
+
+\subsection{Result}
+
+I wont add a source code to this document,
+so you can see an implementation of discovery server on commit
+\href{https://github.com/dankmolot/petope/tree/ada754c522e47c6b43f127ef1a3b6b2a6b7bc2c2}{ada754}.
+
+\newpage
+
+Since right now discovery uses simple text udp protocol,
+I can test it via \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
+\begin{center}
+  \includegraphics[width=\textwidth]{2/netcat_discovery_example.png}
+
+  And here are discovery logs:
+
+  \includegraphics[width=\textwidth]{2/discovery_server_logs.png}
+\end{center}
+
+Great! Now I only need to run both nodes, and wait before they connect to each other.
+
+\begin{center}
+  \includegraphics[width=\textwidth]{2/node_alpha.png}
+  \includegraphics[width=\textwidth]{2/node_beta.png}
+\end{center}
+
+Here you can see that node \texttt{beta} has reached node \texttt{alpha},
+and node \texttt{alpha} responded back. Both nodes have found adresses
+only via node identificators \texttt{alpha} and \texttt{beta}. Awesome!
+
+Since current implementation constantly tries to find other node and connect to it,
+it is ready for UDP hole punching.
+
+\section{UDP hole punching}
 
 
 \newpage

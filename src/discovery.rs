@@ -114,12 +114,18 @@ impl DiscoveryClient {
         DiscoveryClient { addr }
     }
 
+    fn recv_from_addr(&self, socket: &UdpSocket, buf: &mut [u8]) -> io::Result<usize> {
+        loop {
+            let (received, addr) = socket.recv_from(buf)?;
+            if addr == self.addr {
+                return Ok(received);
+            }
+        }
+    }
+
     fn recv(&self, socket: &UdpSocket) -> io::Result<String> {
         let mut buf = [0; 128];
-        let (received, addr) = socket.recv_from(&mut buf)?;
-        if addr != self.addr {
-            return Err(Error::from(ErrorKind::Deadlock));
-        }
+        let received = self.recv_from_addr(socket, &mut buf)?;
 
         let data: String = str::from_utf8(&buf[..received])
             .map(|v| String::from(v.trim()))
