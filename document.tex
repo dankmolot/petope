@@ -5,6 +5,12 @@
 \usepackage{minted}
 \usepackage{graphicx}
 \graphicspath{ {./docassets} }
+\usepackage[margin=1in]{geometry} % reduce borders for pages
+\usepackage{float} % add `H` floating parameter so figures appear like I want
+
+% reduce space between images and captions
+\usepackage{caption}
+\captionsetup{skip=5pt}
 
 \setminted{
   linenos,
@@ -301,9 +307,58 @@ it is ready for UDP hole punching.
 
 \section{UDP hole punching}
 
-% 91.107.213.38
-% 46.131.76.184
-% 88.196.179.131
+To test UDP hole punching capability, I just need to run a \emph{discovery} server on a
+dedicated public server, and then run two nodes behing two different networks.
+
+First node will be my notebook connected to my home network,
+second one my phone with \href{https://termux.dev/en/}{Termux} installed and
+connected to Telia mobile network.
+Discovery server will be ran on my rented virtual server provided by Hetzner with static public IPv4 address.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{3/node_on_a_pc.png}
+  \caption{successful reply from the phone to the notebook}
+  \label{fig:udp_punch_pc}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{3/node_on_a_phone.png}
+  \caption{successful incoming message from the notebook to the phone}
+  \label{fig:udp_punch_phone}
+\end{figure}
+
+As you can see from the screenshots \ref{fig:udp_punch_pc} and \ref{fig:udp_punch_phone}
+connected to a discovery server with address \emph{91.107.213.38}
+\footnote{my rented server with public address},
+notebook with address \emph{88.196.179.131} and phone with address \emph{46.131.76.184}.
+
+Both nodes told discovery server about themselves, retrieved addresses of each other
+and since they both sent a packet to each other, NAT routers started allowing incoming packets.
+First phone got the message, and afterwards the notebook received
+a reply from the phone.
+
+\subsection{About failures}
+
+At first I have tried connecting both nodes from the same network,
+my home Wi-Fi, but both nodes weren't receiving incoming packets.
+Probably there is some sort of limitation on the router itself, and
+it couldn't decide how to forward packets. So for local network there
+must be some other way to find each other.
+
+Luckily there is \href{https://en.wikipedia.org/wiki/Zero-configuration_networking}{Zeroconf}
+set of technologies that will allow to broadcast and discover services in local network,
+so nodes in the same network can connect to each other even without a discovery server.
+
+\href{https://docs.iroh.computer/connecting/local-discovery}{Iroh}
+actually uses mDNS-like system to discover endpoints, not enabled by default
+but could be enabled easily.
+
+Also another problem I forsee is that both nodes in \emph{different} networks but under \emph{same} CGNAT
+\footnote{aka with same public IPv4 address, but with different internal addresses}
+will have also a problem connecting to each other, since discovery server
+can't know internal CGNAT address of both nodes.
 
 \newpage
 \section*{Sources}
