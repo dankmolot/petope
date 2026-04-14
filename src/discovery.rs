@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::{self, Error, ErrorKind, Read, Write},
-    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket},
+    net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     str::{self, FromStr},
     sync::{Arc, Mutex},
     thread,
@@ -128,31 +128,19 @@ fn get_addr(port: u16) -> String {
     format!("{}:{}", Ipv4Addr::UNSPECIFIED, port)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct DiscoveryClient {
-    addr: SocketAddr,
+    pub stream: TcpStream,
 }
 
 impl DiscoveryClient {
-    pub fn new(target: &str) -> DiscoveryClient {
-        let addr =
-            SocketAddr::from_str(target).expect("unable to parse given discovery server addr");
-
-        DiscoveryClient { addr }
+    pub fn new(stream: TcpStream) -> DiscoveryClient {
+        DiscoveryClient { stream }
     }
 
-    fn recv_from_addr(&self, socket: &UdpSocket, buf: &mut [u8]) -> io::Result<usize> {
-        loop {
-            let (received, addr) = socket.recv_from(buf)?;
-            if addr == self.addr {
-                return Ok(received);
-            }
-        }
-    }
-
-    fn recv(&self, socket: &UdpSocket) -> io::Result<String> {
+    fn recv(&mut self) -> io::Result<String> {
         let mut buf = [0; 128];
-        let received = self.recv_from_addr(socket, &mut buf)?;
+        let received = self.stream.read(&mut buf)?;
 
         let data: String = str::from_utf8(&buf[..received])
             .map(|v| String::from(v.trim()))
@@ -163,16 +151,16 @@ impl DiscoveryClient {
         Ok(data)
     }
 
-    fn send(&self, socket: &UdpSocket, args: &[&str]) -> io::Result<()> {
+    fn send(&mut self, args: &[&str]) -> io::Result<()> {
         let result = args.join("|");
-        socket.send_to(result.as_bytes(), self.addr)?;
+        self.stream.write(result.as_bytes())?;
         // println!("{} -> {}", result.as_str(), self.addr);
         Ok(())
     }
 
-    pub fn ping(&self, socket: &UdpSocket) -> io::Result<()> {
-        self.send(socket, &["ping"])?;
-        let pong = self.recv(socket).map(|v| v == "pong").unwrap_or(false);
+    pub fn ping(&mut self) -> io::Result<()> {
+        self.send(&["ping"])?;
+        let pong = self.recv().map(|v| v == "pong").unwrap_or(false);
 
         if !pong {
             return Err(Error::from(ErrorKind::NotFound));
@@ -181,14 +169,14 @@ impl DiscoveryClient {
         Ok(())
     }
 
-    pub fn register(&self, socket: &UdpSocket, node_id: &str) -> io::Result<()> {
-        self.send(socket, &["register", node_id])?;
+    pub fn register(&mut self, node_id: &str) -> io::Result<()> {
+        self.send(&["register", node_id])?;
         Ok(())
     }
 
-    pub fn get(&self, socket: &UdpSocket, node_id: &str) -> io::Result<SocketAddr> {
-        self.send(socket, &["get", node_id])?;
-        let response = self.recv(socket)?;
+    pub fn get(&mut self, node_id: &str) -> io::Result<SocketAddr> {
+        self.send(&["get", node_id])?;
+        let response = self.recv()?;
         let mut args = response.split("|");
         if let Some(result) = args.next() {
             if result == "found" {

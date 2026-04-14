@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 pub mod discovery;
 pub mod node;
+pub mod utils;
 
 /// My experiments with udp connection
 #[derive(Parser, Debug)]

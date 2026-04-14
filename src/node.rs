@@ -1,6 +1,7 @@
 use std::{
-    io::{self, ErrorKind},
-    net::{SocketAddr, UdpSocket},
+    io::{self, ErrorKind, Read, Write},
+    net::{Shutdown, SocketAddr, TcpListener, UdpSocket},
+    process::exit,
     str,
     thread::sleep,
     time::Duration,
@@ -8,7 +9,10 @@ use std::{
 
 use clap::Args;
 
-use crate::discovery;
+use crate::{
+    discovery::{self, DiscoveryClient},
+    utils,
+};
 
 #[derive(Args, Debug)]
 pub struct NodeArgs {
@@ -21,58 +25,59 @@ pub struct NodeArgs {
 }
 
 pub fn main(args: NodeArgs) {
-    let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+    let discovery_addr = args.discovery.parse().unwrap();
+    let stream = utils::socket_connect(None, discovery_addr).unwrap();
+    let mut disco = DiscoveryClient::new(stream);
 
-    // do not block for too long the reads
-    socket
-        .set_read_timeout(Some(Duration::from_secs(5)))
-        .unwrap();
-
-    let disco = discovery::DiscoveryClient::new(&args.discovery);
     loop {
         println!("searching for node {:?}", &args.target);
-        let mut node_addr = discover_node(&socket, &disco, &args.id, &args.target).unwrap();
+        let node_addr = discover_node(&mut disco, &args.id, &args.target).unwrap();
 
         println!(
             "trying to reach node {:?} via {} on {}",
             &args.target,
             node_addr,
-            socket.local_addr().unwrap()
+            disco.stream.local_addr().unwrap()
         );
-        socket
-            .send_to(
-                format!("hi node {:?}!\n", &args.target).as_bytes(),
-                node_addr,
-            )
+
+        let mut stream = match utils::socket_connect(disco.stream.local_addr().ok(), node_addr) {
+            Ok(stream) => stream,
+            Err(e) => {
+                if e.kind() == io::ErrorKind::ConnectionRefused {
+                    let listener = utils::socket_listen(disco.stream.local_addr().ok()).unwrap();
+                    listen(&args, &mut disco, listener, node_addr);
+                    continue;
+                }
+
+                panic!("connect error: {}", e)
+            }
+        };
+
+        stream
+            .write(format!("hi node {:?}!\n", &args.target).as_bytes())
             .unwrap();
 
         let mut buf = [0; 128];
-        match socket.recv_from(&mut buf) {
-            Ok((received, addr)) => {
+        match stream.read(&mut buf) {
+            Ok(received) => {
                 let data = str::from_utf8(&buf[..received])
                     .map(str::trim)
                     .unwrap_or("");
 
-                println!("{} -> {}", addr, data);
-                if addr != node_addr {
-                    // try to ask the discovery if the node is the right one
-                    node_addr = disco.get(&socket, &args.target).unwrap();
-                }
+                println!("{} -> {}", stream.peer_addr().unwrap(), data);
 
-                if addr == node_addr {
-                    socket
-                        .send_to(
-                            format!("got the message, node {:?}!\n", &args.target).as_bytes(),
-                            node_addr,
-                        )
-                        .unwrap();
+                stream
+                    .write(format!("got the message, node {:?}!\n", &args.target).as_bytes())
+                    .unwrap();
 
-                    println!("received a message from the node, success!");
-                    return;
-                }
+                println!("received a message from the node, success!");
+                return;
             }
             Err(e) => {
-                if e.kind() != ErrorKind::TimedOut && e.kind() != ErrorKind::WouldBlock {
+                if e.kind() != ErrorKind::TimedOut
+                    && e.kind() != ErrorKind::WouldBlock
+                    && e.kind() != ErrorKind::ConnectionReset
+                {
                     panic!("{}", e)
                 }
             }
@@ -81,14 +86,13 @@ pub fn main(args: NodeArgs) {
 }
 
 fn discover_node(
-    socket: &UdpSocket,
-    disco: &discovery::DiscoveryClient,
+    disco: &mut discovery::DiscoveryClient,
     id: &str,
     target: &str,
 ) -> io::Result<SocketAddr> {
     loop {
-        disco.register(socket, id)?;
-        match disco.get(socket, target) {
+        disco.register(id)?;
+        match disco.get(target) {
             Ok(addr) => {
                 return Ok(addr);
             }
@@ -104,5 +108,47 @@ fn discover_node(
         }
 
         sleep(Duration::from_secs(5));
+    }
+}
+
+fn listen(
+    args: &NodeArgs,
+    disco: &mut discovery::DiscoveryClient,
+    listener: TcpListener,
+    node_addr: SocketAddr,
+) {
+    println!(
+        "listening for connections on {}",
+        listener.local_addr().unwrap()
+    );
+    let (mut stream, mut addr) = listener.accept().unwrap();
+    println!("got incoming connection: {}", addr);
+    if addr != node_addr {
+        addr = disco.get(&args.target).unwrap();
+    }
+
+    if addr != node_addr {
+        return;
+    }
+
+    let mut buf = [0; 1024];
+    match stream.read(&mut buf) {
+        Ok(received) => {
+            let data = str::from_utf8(&buf[..received])
+                .map(str::trim)
+                .unwrap_or("");
+
+            println!("{} -> {}", stream.peer_addr().unwrap(), data);
+
+            stream
+                .write(format!("got the message, node {:?}!\n", &args.target).as_bytes())
+                .unwrap();
+
+            println!("received a message from the node, success!");
+            exit(0);
+        }
+        Err(e) => {
+            eprintln!("read error: {}", e);
+        }
     }
 }
