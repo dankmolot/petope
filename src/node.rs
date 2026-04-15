@@ -1,18 +1,10 @@
-use std::{
-    io::{self, ErrorKind, Read, Write},
-    net::{Shutdown, SocketAddr, TcpListener, TcpStream, UdpSocket},
-    process::exit,
-    str,
-    thread::sleep,
-    time::Duration,
-};
+use std::net::SocketAddr;
 
+use anyhow::{Context, Result, bail};
 use clap::Args;
+use tokio::net::lookup_host;
 
-use crate::{
-    discovery::{self, DiscoveryClient},
-    utils,
-};
+use crate::{discovery::DiscoveryClient, utils};
 
 #[derive(Args, Debug)]
 pub struct NodeArgs {
@@ -24,160 +16,36 @@ pub struct NodeArgs {
     discovery: String,
 }
 
-pub fn main(args: NodeArgs) {
-    let discovery_addr = args.discovery.parse().unwrap();
-    let stream = utils::socket_connect(None, discovery_addr).unwrap();
-    let mut disco = DiscoveryClient::new(stream);
-
-    loop {
-        println!("searching for node {:?}", &args.target);
-        let node_addr = discover_node(&mut disco, &args.id, &args.target).unwrap();
-
-        println!(
-            "trying to reach node {:?} via {} on {}",
-            &args.target,
-            node_addr,
-            disco.stream.local_addr().unwrap()
-        );
-
-        let mut stream = match utils::socket_connect(disco.stream.local_addr().ok(), node_addr) {
-            Ok(stream) => stream,
-            Err(e) => {
-                if e.kind() == io::ErrorKind::ConnectionRefused {
-                    let listener = utils::socket_listen(disco.stream.local_addr().ok()).unwrap();
-                    listen(&args, &mut disco, listener, node_addr);
-                    continue;
-                }
-
-                panic!("connect error: {}", e)
-            }
-        };
-
-        stream
-            .write(format!("hi node {:?}!\n", &args.target).as_bytes())
-            .unwrap();
-
-        let mut buf = [0; 128];
-        match stream.read(&mut buf) {
-            Ok(received) => {
-                let data = str::from_utf8(&buf[..received])
-                    .map(str::trim)
-                    .unwrap_or("");
-
-                println!("{} -> {}", stream.peer_addr().unwrap(), data);
-
-                stream
-                    .write(format!("got the message, node {:?}!\n", &args.target).as_bytes())
-                    .unwrap();
-
-                println!("received a message from the node, success!");
-                return;
-            }
-            Err(e) => {
-                if e.kind() != ErrorKind::TimedOut
-                    && e.kind() != ErrorKind::WouldBlock
-                    && e.kind() != ErrorKind::ConnectionReset
-                {
-                    panic!("{}", e)
-                }
-            }
-        }
-    }
+pub async fn main(args: NodeArgs) -> Result<()> {
+    discovery_worker(&args.discovery, args.target).await?;
+    Ok(())
 }
 
-fn discover_node(
-    disco: &mut discovery::DiscoveryClient,
-    id: &str,
-    target: &str,
-) -> io::Result<SocketAddr> {
-    loop {
-        disco.register(id)?;
-        match disco.get(target) {
-            Ok(addr) => {
-                return Ok(addr);
-            }
-            Err(e) => {
-                // could be transformed into a match
-                if e.kind() != ErrorKind::NotFound
-                    && e.kind() != ErrorKind::TimedOut
-                    && e.kind() != ErrorKind::WouldBlock
-                {
-                    return Err(e);
-                }
-            }
+async fn discovery_worker(addr: &str, id: String) -> Result<SocketAddr> {
+    let discovery_addr = lookup_host(addr)
+        .await?
+        .filter(|v| v.is_ipv4()) // no ipv6 support yet :p
+        .next()
+        .context("unable to lookup discovery address")?;
+
+    let stream = utils::reusable_socket(None)?
+        .connect(discovery_addr)
+        .await
+        .with_context(|| format!("connect to discovery server via {}", discovery_addr))?;
+    let local_addr = stream.local_addr()?;
+
+    let mut server = DiscoveryClient::new(stream);
+
+    server.register(id.clone()).await.unwrap();
+    match server.get(id.clone()).await.unwrap() {
+        Some(public_addr) => {
+            println!(
+                "registered on {} as \"{}\" with address {}",
+                discovery_addr, &id, public_addr
+            )
         }
-
-        sleep(Duration::from_secs(5));
-    }
-}
-
-fn listen(
-    args: &NodeArgs,
-    disco: &mut discovery::DiscoveryClient,
-    listener: TcpListener,
-    node_addr: SocketAddr,
-) {
-    println!(
-        "listening for connections on {}",
-        listener.local_addr().unwrap()
-    );
-
-    let (mut stream, mut addr) = match accept(&listener) {
-        Ok(result) => result,
-        Err(e) => {
-            if e.kind() == ErrorKind::NotFound {
-                return;
-            }
-
-            panic!("accept: {}", e);
-        }
+        None => bail!("discovery server {} failed to register us", discovery_addr),
     };
 
-    println!("got incoming connection: {}", addr);
-    if addr != node_addr {
-        addr = disco.get(&args.target).unwrap();
-    }
-
-    if addr != node_addr {
-        return;
-    }
-
-    let mut buf = [0; 1024];
-    match stream.read(&mut buf) {
-        Ok(received) => {
-            let data = str::from_utf8(&buf[..received])
-                .map(str::trim)
-                .unwrap_or("");
-
-            println!("{} -> {}", stream.peer_addr().unwrap(), data);
-
-            stream
-                .write(format!("got the message, node {:?}!\n", &args.target).as_bytes())
-                .unwrap();
-
-            println!("received a message from the node, success!");
-            exit(0);
-        }
-        Err(e) => {
-            eprintln!("read error: {}", e);
-        }
-    }
-}
-
-fn accept(listener: &TcpListener) -> io::Result<(TcpStream, SocketAddr)> {
-    for _ in 1..10 {
-        match listener.accept() {
-            Ok(result) => {
-                return Ok(result);
-            }
-            Err(e) => {
-                if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut {
-                    sleep(Duration::from_millis(500));
-                    continue;
-                }
-                return Err(e);
-            }
-        }
-    }
-    Err(ErrorKind::NotFound.into())
+    Ok(local_addr)
 }

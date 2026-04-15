@@ -1,5 +1,7 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+pub mod connection;
 pub mod discovery;
 pub mod node;
 pub mod utils;
@@ -18,11 +20,14 @@ enum Commands {
     Discovery(discovery::DiscoveryArgs),
 }
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Node(args) => node::main(args),
-        Commands::Discovery(args) => discovery::main(args),
+        Commands::Node(args) => node::main(args).await?,
+        Commands::Discovery(args) => discovery::main(args).await?,
     }
+
+    Ok(())
 }
