@@ -1,8 +1,10 @@
 use std::{net::SocketAddr, process::exit, thread::sleep, time::Duration};
 
 use anyhow::{Context, Result, bail};
+use bytes::BytesMut;
 use clap::Args;
 use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpSocket, lookup_host},
     stream,
 };
@@ -68,8 +70,17 @@ pub async fn main(args: NodeArgs) -> Result<()> {
                 .connect(node_addr)
                 .await
             {
-                Ok(stream) => {
+                Ok(mut stream) => {
                     println!("connected!");
+                    stream
+                        .write_all(format!("yo, i am {}", &args.id).as_bytes())
+                        .await?;
+
+                    let mut buf = BytesMut::new();
+                    stream.read_buf(&mut buf).await?;
+                    println!("message: {}", std::str::from_utf8(buf.as_ref()).unwrap());
+
+                    sleep(Duration::from_secs(1));
                     exit(0);
                 }
                 Err(e) => {
