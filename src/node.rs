@@ -1,8 +1,11 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, process::exit, thread::sleep, time::Duration};
 
 use anyhow::{Context, Result, bail};
 use clap::Args;
-use tokio::net::lookup_host;
+use tokio::{
+    net::{TcpSocket, lookup_host},
+    stream,
+};
 
 use crate::{discovery::DiscoveryClient, utils};
 
@@ -17,35 +20,66 @@ pub struct NodeArgs {
 }
 
 pub async fn main(args: NodeArgs) -> Result<()> {
-    discovery_worker(&args.discovery, args.target).await?;
-    Ok(())
-}
+    let local_addr = {
+        let listener = utils::reusable_socket(Some("0.0.0.0:0".parse()?))?.listen(8)?;
+        let local_addr = listener.local_addr()?;
 
-async fn discovery_worker(addr: &str, id: String) -> Result<SocketAddr> {
-    let discovery_addr = lookup_host(addr)
-        .await?
-        .filter(|v| v.is_ipv4()) // no ipv6 support yet :p
-        .next()
-        .context("unable to lookup discovery address")?;
+        tokio::spawn(async move {
+            loop {
+                let (stream, addr) = listener.accept().await.unwrap();
+                println!("connection from {}", addr);
+                exit(0);
+            }
+        });
 
-    let stream = utils::reusable_socket(None)?
-        .connect(discovery_addr)
-        .await
-        .with_context(|| format!("connect to discovery server via {}", discovery_addr))?;
-    let local_addr = stream.local_addr()?;
-
-    let mut server = DiscoveryClient::new(stream);
-
-    server.register(id.clone()).await.unwrap();
-    match server.get(id.clone()).await.unwrap() {
-        Some(public_addr) => {
-            println!(
-                "registered on {} as \"{}\" with address {}",
-                discovery_addr, &id, public_addr
-            )
-        }
-        None => bail!("discovery server {} failed to register us", discovery_addr),
+        local_addr
     };
 
-    Ok(local_addr)
+    let mut discovery = {
+        let host = lookup_host(args.discovery)
+            .await?
+            .filter(|v| v.is_ipv4()) // no ipv6 support yet :p
+            .next()
+            .context("unable to lookup discovery address")?;
+
+        let stream = utils::reusable_socket(Some(local_addr))?
+            .connect(host)
+            .await
+            .with_context(|| format!("connect to discovery server via {}", host))?;
+
+        DiscoveryClient::new(stream)
+    };
+
+    discovery.register(args.id.clone()).await?;
+    match discovery.get(args.id.clone()).await? {
+        Some(public_addr) => {
+            println!(
+                "registered as \"{}\" with address {}",
+                &args.id, public_addr
+            )
+        }
+        None => bail!("discovery server failed to register us"),
+    };
+
+    loop {
+        if let Some(node_addr) = discovery.get(args.target.clone()).await? {
+            println!("trying to connect to {}", node_addr);
+            match utils::reusable_socket(Some(local_addr))?
+                .connect(node_addr)
+                .await
+            {
+                Ok(stream) => {
+                    println!("connected!");
+                    exit(0);
+                }
+                Err(e) => {
+                    println!("unable due {}", e);
+                }
+            }
+        }
+
+        sleep(Duration::from_secs(5));
+    }
+
+    Ok(())
 }
