@@ -56,7 +56,7 @@ impl Connection {
         };
 
         let line =
-            str::from_utf8(line).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            std::str::from_utf8(line).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
         println!("{} -> {}", self.stream.get_ref().peer_addr()?, line);
 
@@ -123,7 +123,7 @@ impl Connection {
 
         println!(
             "{} -> {}",
-            str::from_utf8(self.stream.buffer()).unwrap_or("???"),
+            std::str::from_utf8(self.stream.buffer()).unwrap_or("???"),
             self.stream.get_ref().peer_addr()?
         );
         self.stream.write_all(b"\n").await?;
