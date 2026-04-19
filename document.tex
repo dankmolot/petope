@@ -494,6 +494,67 @@ still will be able to discover each other and successfully connect.
 There is a \href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rust library which will help
 me implement the discovery via the code, all I need is to use it instead of a discovery server.
 
+\subsection{Actual implementation}
+
+It was pretty easy to implement the mDNS integration, since API is pretty straightforward
+just like discovery client I have made previously. Here is how my service
+\footnote{service is a record that contains a service type, my IP addresses, hostname, some identificator and properties}
+is created and registered:
+
+\begin{minted}{rust}
+let sd = ServiceDaemon::new()?; // Daemon from mdns-sd
+let hostname = utils::get_hostname()?; // returns current hostname with `.local.` appended
+let service = ServiceInfo::new(
+    "_petope._tcp.local.", // consists of a service name, protocol, and domain (.local)
+    &args.id, // identificator, derived from arguments, i.e. "notebook"
+    &hostname, // device hostname that must end with .local.
+    (), // ip addresses, we use .enable_addr_auto() so the library will add addresses for us
+    local_addr.port(), // this is a port of the listener socket, so other node will know to which port to connect to
+    None, // properties, we don't use any
+)?
+.enable_addr_auto();
+sd.register(service)?; // ServiceDaemon will handle automatic broadcasting of the service
+\end{minted}
+
+Discovery of the service is also very simple:
+
+\begin{minted}{rust}
+// fullname consists in form of identification + service type
+let node_fullname = format!("{}.{}", node_id, "_petope._tcp.local.");
+let receiver = sd.browse("_petope._tcp.local.")?;
+
+loop {
+    // ServiceDaemon will automatically search and resolve services for us
+    let event = receiver.recv_async().await?;
+    match event {
+        // we just need to listen for resolved events
+        ServiceEvent::ServiceResolved(svc) => {
+            // Make sure that service has right identification
+            if svc.get_fullname() == node_fullname.as_str() {
+                let addresses = svc.get_addresses_v4();
+                println!("discovered {} with addresses {:?}", node_id, addresses);
+                sd.stop_browse("_petope._tcp.local.")?;
+
+                // create SocketAddr that consists from first ipv4 address + service port
+                return Ok(SocketAddr::V4(SocketAddrV4::new(
+                    addresses.iter().next().unwrap().to_owned(),
+                    svc.get_port(),
+                )));
+            }
+        }
+        // ignore all other events
+        _ => {}
+    };
+}
+\end{minted}
+
+Function above will wait indefinetely until it will discover the node, return the address
+to which the code will connect afterwards. One important thing is that a service name in the service type
+(\textbf{\_name}.\_protocol.domain) can't be longer than 15 symbols.
+
+To my suprise it works pretty well, I expected that it would take seconds before a node could discover another node,
+but it all takes a fraction of a second. You can see the entire code at commit \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
+
 \newpage
 \section*{Sources}
 \begin{itemize}
