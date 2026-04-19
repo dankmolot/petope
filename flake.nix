@@ -20,6 +20,7 @@
               latexindent # formatting
               xurl # \url line breaking
               minted # for code highlighting
+              tcolorbox # for blockquotes
             ]
           )
         );

@@ -7,6 +7,7 @@
 \graphicspath{ {./docassets} }
 \usepackage[margin=1in]{geometry} % reduce borders for pages
 \usepackage{float} % add `H` floating parameter so figures appear like I want
+\usepackage{tcolorbox}
 
 % reduce space between images and captions
 \usepackage{caption}
@@ -431,7 +432,67 @@ which in turn will allow me to "easily"\footnote{asynchronous Rust is pretty har
   which is why I have avoided it until now.} run both connection attempts and listen for incoming messages.
 
 \subsection{Second attempt}
-TODO:
+This time I have went through the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial}
+where they have showed examples based on building an application based on \href{https://github.com/tokio-rs/mini-redis/}{mini-redis}
+library which was a great example of how to build a communication. So I have built a basic
+\href{https://en.wikipedia.org/wiki/Frame_(networking)}{"framing"} which allowed me to use
+simple enums to handle input and output data with ease.
+
+Both discovery server and node code was rewritten to use asynchronous Tokio TCP sockets,
+and the main thing that was changed is that now during the start a TCP listener works
+on a background, a node registers itself only during the start, and then repeadetly
+tries to make a connection to another node. And suprsingly this time it has worked!
+
+So less talking and more showing. Setup is the same, one node on my notebook with a home WiFi,
+and another one is my phone connected to a mobile network.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{4/node_notebook.png}
+  \caption{notebook searches for the phone and then successfully connects to it}
+  \label{fig:tcp_punch_notebook}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{4/node_phone.png}
+  \caption{and the phone successfully connects to the notebook from the first try}
+  \label{fig:tcp_punch_phone}
+\end{figure}
+
+As you can see they have both connected to each other (interestingly enough not through TCP listener),
+and sent a message to each other in style \texttt{"yo, i am <node name>"}. I am somewhat certain that I could
+archieve similar results with \emph{standard library + socket2} library, but I still learned good practices
+from reading the Tokio tutorial and trying to replicate it with my code.
+You can try the code on commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
+
+\subsection{About the same NAT}
+
+Nodes that are behind the same NAT still can't connect to each other what is expected. The problem
+is that nodes try to connect to each other via \emph{public IP address}, but when router sees that
+public address he does not know how to route packets next and just \emph{ignores them}.
+Feature \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning}
+or \emph{NAT loopback} was designed to combat with this problem, and my router
+\href{https://www.asus.com/support/faq/1043024/}{is in the list of supported routers} so it should work in theory.
+In practice, it does not the way I expect. In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum post}
+user \texttt{ColinTaylor} has said that NAT loopback only works if you use port forwarding which I try to avoid.
+
+But the problem leads us to another section!
+
+\section{Multicast DNS}
+
+Instead of trying to discover a node on the internet, we also could try to use a form of \href{https://en.wikipedia.org/wiki/Service_discovery}{Service discovery},
+to be precise \href{https://en.wikipedia.org/wiki/Multicast_DNS}{Multicast DNS} which will allow a node to broadcast
+itself on the local network, and other nodes to discover and connect. This way even without an internet nodes
+still will be able to discover each other and successfully connect.
+
+\begin{tcolorbox}
+  Unfortunately this won't help with nodes in different networks but behind one CGNAT,
+  unless an ISP provider implements a NAT hairpinning. IPv6 solves this btw.
+\end{tcolorbox}
+
+There is a \href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rust library which will help
+me implement the discovery via the code, all I need is to use it instead of a discovery server.
 
 \newpage
 \section*{Sources}
