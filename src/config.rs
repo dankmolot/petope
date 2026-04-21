@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
 use crate::utils;
 use anyhow::{Context, Result, anyhow};
-use iroh::{EndpointId, PublicKey, SecretKey};
+use iroh::{EndpointId, SecretKey};
 use toml_edit::{DocumentMut, Item, Table};
 
 #[derive(Debug, Clone)]
@@ -86,7 +84,7 @@ impl Peer {
             .and_then(Item::as_str)
             .ok_or_else(|| anyhow!("expected an `id` but got nothing"))?;
 
-        let id = PublicKey::from_z32(id).context("parse `id` as an EndpointId")?;
+        let id = EndpointId::from_z32(id).context("parse `id` as an EndpointId")?;
 
         Ok(Peer { id })
     }
