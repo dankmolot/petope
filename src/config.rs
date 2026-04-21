@@ -1,17 +1,18 @@
-use crate::utils;
-use anyhow::{Context, Result};
-use iroh::{PublicKey, SecretKey};
-use serde::{Deserialize, Serialize};
-use toml_edit::DocumentMut;
+use std::str::FromStr;
 
-#[derive(Debug)]
+use crate::utils;
+use anyhow::{Context, Result, anyhow};
+use iroh::{EndpointId, PublicKey, SecretKey};
+use toml_edit::{DocumentMut, Item, Table};
+
+#[derive(Debug, Clone)]
 pub struct Config {
-    pub peers: Option<Vec<Peer>>,
+    pub peers: Vec<Peer>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Peer {
-    pub public_key: PublicKey,
+    pub id: EndpointId,
 }
 
 impl Config {
@@ -25,7 +26,7 @@ impl Config {
         let private_key =
             Config::get_or_generate_secret_key(path, &mut doc).context("get private key")?;
 
-        Ok((private_key, Config { peers: None }))
+        Ok((private_key, Config::parse(doc)?))
     }
 
     fn read_file(path: &str) -> std::io::Result<String> {
@@ -62,5 +63,31 @@ impl Config {
 
             Ok(key)
         }
+    }
+
+    fn parse(doc: DocumentMut) -> Result<Self> {
+        let mut peers = Vec::new();
+        if let Some(arr) = doc.get("peer").and_then(Item::as_array_of_tables) {
+            for (i, t) in arr.iter().enumerate() {
+                peers.push(
+                    Peer::parse(t).with_context(|| format!("parse a [[peer]] at index {}", i))?,
+                );
+            }
+        }
+
+        Ok(Config { peers })
+    }
+}
+
+impl Peer {
+    fn parse(t: &Table) -> Result<Self> {
+        let id = t
+            .get("id")
+            .and_then(Item::as_str)
+            .ok_or_else(|| anyhow!("expected an `id` but got nothing"))?;
+
+        let id = PublicKey::from_z32(id).context("parse `id` as an EndpointId")?;
+
+        Ok(Peer { id })
     }
 }
