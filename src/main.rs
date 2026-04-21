@@ -1,10 +1,10 @@
-use crate::{based_key::BasedKey, config::Config};
+use crate::config::{Config, Peer};
 use anyhow::{Context, Result};
 use clap::Parser;
 use iroh::{Endpoint, endpoint::presets};
 
-mod based_key;
 mod config;
+mod utils;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -17,9 +17,7 @@ struct Cli {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let mut config = Config::load(&cli.config);
-    let secret_key = config.secret_key_or_generate();
-    config.save(&cli.config)?;
+    let (secret_key, config) = Config::load(&cli.config).context("load config")?;
 
     let endpoint = Endpoint::builder(presets::N0)
         .secret_key(secret_key)
@@ -27,7 +25,7 @@ async fn main() -> Result<()> {
         .await
         .context("bind an endpoint")?;
 
-    println!("running as {}", BasedKey::from(endpoint.id()).to_string());
+    println!("running as {}", endpoint.id().to_z32());
 
     tokio::signal::ctrl_c().await?;
     println!("bye-bye");

@@ -14,6 +14,6 @@ tun-rs = { version = "2.8.3", features = ["async"] }
 etherparse = "0.20.1"
 net-route = "0.4.6"
 serde = "1"
-toml = "1"
+toml_edit = "0.25"
 base64 = "0.22.1"
 zeroize = "1"
