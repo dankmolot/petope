@@ -1,6 +1,7 @@
-use crate::config::Config;
-use anyhow::Result;
+use crate::{based_key::BasedKey, config::Config};
+use anyhow::{Context, Result};
 use clap::Parser;
+use iroh::{Endpoint, endpoint::presets};
 
 mod based_key;
 mod config;
@@ -20,7 +21,13 @@ async fn main() -> Result<()> {
     let secret_key = config.secret_key_or_generate();
     config.save(&cli.config)?;
 
-    println!("{}", secret_key.public().fmt_short());
+    let endpoint = Endpoint::builder(presets::N0)
+        .secret_key(secret_key)
+        .bind()
+        .await
+        .context("bind an endpoint")?;
+
+    println!("running as {}", BasedKey::from(endpoint.id()).to_string());
 
     tokio::signal::ctrl_c().await?;
     println!("bye-bye");

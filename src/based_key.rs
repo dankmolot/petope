@@ -1,13 +1,31 @@
 use base64::Engine;
-use iroh::SecretKey;
+use iroh::{PublicKey, SecretKey};
 use serde::{Deserialize, Serialize, de::Visitor};
-use std::{array::TryFromSliceError, ops::Deref};
+use std::{array::TryFromSliceError, ops::Deref, str::FromStr};
 
 const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
 // A base64 encoded byte array, used for keys
 #[derive(Debug, Clone, zeroize::ZeroizeOnDrop, PartialEq, Eq)]
 pub struct BasedKey<const N: usize = 32>([u8; N]);
+
+impl<const N: usize> ToString for BasedKey<N> {
+    fn to_string(&self) -> String {
+        BASE64_ENGINE.encode(&self.0)
+    }
+}
+
+impl<const N: usize> FromStr for BasedKey<N> {
+    type Err = base64::DecodeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        BASE64_ENGINE.decode(s).and_then(|v| {
+            v.as_slice()
+                .try_into()
+                .map_err(|_| base64::DecodeError::InvalidLength(N))
+        })
+    }
+}
 
 impl<const N: usize> Deref for BasedKey<N> {
     type Target = [u8; N];
@@ -54,13 +72,25 @@ impl Into<SecretKey> for BasedKey {
     }
 }
 
+impl From<PublicKey> for BasedKey {
+    fn from(value: PublicKey) -> Self {
+        value.as_bytes().to_owned().into()
+    }
+}
+impl TryInto<PublicKey> for BasedKey {
+    type Error = iroh::KeyParsingError;
+
+    fn try_into(self) -> Result<PublicKey, Self::Error> {
+        PublicKey::from_bytes(&self)
+    }
+}
+
 impl<const N: usize> Serialize for BasedKey<N> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let result = BASE64_ENGINE.encode(&self.0);
-        serializer.serialize_str(&result)
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -80,14 +110,7 @@ impl<'de, const N: usize> Deserialize<'de> for BasedKey<N> {
             where
                 E: serde::de::Error,
             {
-                BASE64_ENGINE
-                    .decode(v)
-                    .map_err(|e| serde::de::Error::custom(e.to_string()))
-                    .and_then(|v| {
-                        v.as_slice()
-                            .try_into()
-                            .map_err(|e: TryFromSliceError| serde::de::Error::custom(e.to_string()))
-                    })
+                BasedKey::from_str(v).map_err(|e| serde::de::Error::custom(e.to_string()))
             }
         }
         deserializer.deserialize_string(KeyVisitor)
