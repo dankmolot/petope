@@ -13,3 +13,6 @@ latex_dist
 
 # other
 .vscode
+
+# config file for petope
+config*.toml
