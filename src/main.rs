@@ -5,6 +5,7 @@ use iroh::{Endpoint, endpoint::presets};
 
 mod config;
 mod peer;
+mod peer_addr;
 mod router;
 mod tun;
 mod utils;
@@ -33,15 +34,15 @@ async fn main() -> Result<()> {
         .context("run router")?;
 
     println!("running as {}", endpoint.id().to_z32());
-    println!("ipv4: {} ipv6: {}", router.me.addr_v4, router.me.addr_v6);
+    println!("ipv4: {} ipv6: {}", router.me.v4, router.me.v6);
 
     println!("peers:");
     for peer in &router.peers {
         println!(
             "- {} ipv4: {} ipv6: {}",
-            peer.id.fmt_short(),
-            peer.addr_v4,
-            peer.addr_v6
+            peer.addr.id.fmt_short(),
+            peer.addr.v4,
+            peer.addr.v6
         );
     }
 

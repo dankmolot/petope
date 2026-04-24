@@ -1,51 +1,47 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::sync::Arc;
 
+use crate::peer_addr::PeerAddr;
+use bytes::BytesMut;
+use futures::StreamExt;
 use iroh::EndpointId;
+use ring_channel::{RingReceiver, RingSender, ring_channel};
+use tokio::sync::mpsc;
 
-use crate::{config, utils};
-
-#[derive(Debug, Clone, Copy)]
 pub struct Peer {
-    pub id: EndpointId,
-    pub addr_v4: Ipv4Addr,
-    pub addr_v6: Ipv6Addr,
+    pub addr: PeerAddr,
+    send_queue: RingSender<BytesMut>,
+    route_queue: mpsc::Sender<BytesMut>,
 }
 
-impl From<EndpointId> for Peer {
-    fn from(id: EndpointId) -> Self {
-        let (addr_v4, addr_v6) = utils::ip_pair_from_id(id);
+impl Peer {
+    pub async fn handle(id: EndpointId, route_queue: mpsc::Sender<BytesMut>) -> Arc<Peer> {
+        let (send_queue, receiver) = ring_channel(1.try_into().unwrap());
 
-        Peer {
-            id,
-            addr_v4,
-            addr_v6,
-        }
+        let peer = Arc::new(Peer {
+            addr: id.into(),
+            route_queue,
+            send_queue,
+        });
+
+        peer.clone().receiver(receiver).await;
+
+        peer
     }
-}
 
-impl From<&config::Peer> for Peer {
-    fn from(value: &config::Peer) -> Self {
-        value.id.into()
+    // Sends bytes to the peer
+    pub fn send(&self, bytes: BytesMut) {
+        self.send_queue.send(bytes).ok();
     }
-}
 
-impl PartialEq<Ipv4Addr> for Peer {
-    fn eq(&self, other: &Ipv4Addr) -> bool {
-        self.addr_v4.eq(other)
-    }
-}
-
-impl PartialEq<Ipv6Addr> for Peer {
-    fn eq(&self, other: &Ipv6Addr) -> bool {
-        self.addr_v6.eq(other)
-    }
-}
-
-impl PartialEq<IpAddr> for Peer {
-    fn eq(&self, other: &IpAddr) -> bool {
-        match other {
-            IpAddr::V4(addr) => self == addr,
-            IpAddr::V6(addr) => self == addr,
-        }
+    async fn receiver(self: Arc<Self>, mut chan: RingReceiver<BytesMut>) {
+        tokio::spawn(async move {
+            while let Some(bytes) = chan.next().await {
+                println!(
+                    "{} bytes must go to peer {}",
+                    bytes.len(),
+                    self.addr.id.fmt_short()
+                );
+            }
+        });
     }
 }
