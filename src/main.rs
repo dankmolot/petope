@@ -4,9 +4,8 @@ use clap::Parser;
 use iroh::{Endpoint, endpoint::presets};
 
 mod config;
-mod packet;
+mod peer;
 mod router;
-mod state;
 mod tun;
 mod utils;
 
@@ -23,20 +22,28 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     let (secret_key, config) = Config::load(&cli.config).context("load config")?;
 
-    let state = state::State::new(config);
-
     let endpoint = Endpoint::builder(presets::N0)
         .secret_key(secret_key)
         .bind()
         .await
         .context("bind an endpoint")?;
 
-    let router = Router::run(&state, endpoint.clone())
+    let router = Router::run(&config, endpoint.clone())
         .await
         .context("run router")?;
 
     println!("running as {}", endpoint.id().to_z32());
-    println!("ipv4: {} ipv6: {}", router.addr_v4, router.addr_v6);
+    println!("ipv4: {} ipv6: {}", router.me.addr_v4, router.me.addr_v6);
+
+    println!("peers:");
+    for peer in &router.peers {
+        println!(
+            "- {} ipv4: {} ipv6: {}",
+            peer.id.fmt_short(),
+            peer.addr_v4,
+            peer.addr_v6
+        );
+    }
 
     tokio::signal::ctrl_c().await?;
     println!("bye-bye");

@@ -3,11 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use crate::state::State;
+use crate::config::Config;
 use anyhow::{Context, Result};
 use bytes::BytesMut;
 use futures::{SinkExt, StreamExt};
-use net_route::{Handle, Route};
 use tokio::sync::mpsc;
 use tun_rs::{
     AsyncDevice, DeviceBuilder,
@@ -15,17 +14,13 @@ use tun_rs::{
 };
 
 pub async fn create_tun(
-    state: &State,
+    config: &Config,
     addr: (Ipv4Addr, Ipv6Addr),
     incoming: mpsc::Sender<BytesMut>,
     mut outcoming: mpsc::Receiver<BytesMut>,
-) -> Result<()> {
-    let dev = create_device(&state, addr).context("create tun device")?;
+) -> Result<u32> {
+    let dev = create_device(&config, addr).context("create tun device")?;
     let ifindex = get_ifindex(&dev.name()?).context("retrieve tun device index")?;
-
-    setup_routes(&state, ifindex)
-        .await
-        .context("setup routes")?;
 
     let (mut reader, mut writer) = DeviceFramed::new(Arc::new(dev), BytesCodec::new()).split();
 
@@ -53,25 +48,17 @@ pub async fn create_tun(
         }
     });
 
-    Ok(())
+    Ok(ifindex)
 }
 
-fn create_device(state: &State, addr: (Ipv4Addr, Ipv6Addr)) -> std::io::Result<AsyncDevice> {
+fn create_device(config: &Config, addr: (Ipv4Addr, Ipv6Addr)) -> std::io::Result<AsyncDevice> {
     DeviceBuilder::new()
-        .name(get_device_name(state)?)
+        .name(get_device_name(config)?)
         .mtu(1000)
         .ipv4(addr.0, 32, None)
         .ipv6(addr.1, 128)
         .layer(tun_rs::Layer::L3)
         .build_async()
-}
-
-async fn setup_routes(_state: &State, ifindex: u32) -> std::io::Result<()> {
-    let handle = Handle::new()?;
-    let route = Route::new("fdee::2".parse().unwrap(), 128).with_ifindex(ifindex);
-    handle.add(&route).await?;
-
-    Ok(())
 }
 
 fn get_device_prefix() -> &'static str {
@@ -86,11 +73,11 @@ fn get_device_prefix() -> &'static str {
     }
 }
 
-fn get_device_name(state: &State) -> std::io::Result<String> {
+fn get_device_name(config: &Config) -> std::io::Result<String> {
     use getifs::SmolStr;
     use std::io::{Error, ErrorKind};
 
-    if let Some(name) = &state.config.interface_name {
+    if let Some(name) = &config.interface_name {
         return Ok(name.clone());
     }
 
