@@ -1,5 +1,4 @@
 use crate::{config, utils};
-use anyhow::{Context, Result};
 use iroh::EndpointId;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
@@ -8,24 +7,6 @@ pub struct PeerAddr {
     pub id: EndpointId,
     pub v4: Ipv4Addr,
     pub v6: Ipv6Addr,
-}
-
-impl PeerAddr {
-    pub async fn add_route(&self, handle: &net_route::Handle, ifindex: u32) -> Result<()> {
-        let route_v4 = net_route::Route::new(IpAddr::V4(self.v4), 32).with_ifindex(ifindex);
-        handle
-            .add(&route_v4)
-            .await
-            .with_context(|| format!("add route for {}/32", self.v4))?;
-
-        let route_v6 = net_route::Route::new(IpAddr::V6(self.v6), 128).with_ifindex(ifindex);
-        handle
-            .add(&route_v6)
-            .await
-            .with_context(|| format!("add route for {}/128", self.v6))?;
-
-        Ok(())
-    }
 }
 
 impl From<EndpointId> for PeerAddr {

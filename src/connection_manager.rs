@@ -72,7 +72,7 @@ impl ConnectionManager {
         let conn = rx.borrow().clone();
         if let Some(conn) = &conn {
             self.set_connection(conn.clone());
-            Self::handle_connection(conn.clone(), self.route_tx.clone());
+            Self::handle_connection(conn.clone(), self.route_tx.clone()).await;
         }
 
         // only remove from queue after connection is stored!

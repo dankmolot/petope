@@ -1,15 +1,13 @@
 use crate::{config::Config, utils};
 use anyhow::{Context, Result, anyhow, bail};
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
 use futures::{SinkExt, StreamExt};
 use iroh::EndpointId;
 use ring_channel::{RingReceiver, RingSender};
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     sync::Arc,
-    time::Duration,
 };
-use tokio::{sync::mpsc, time::sleep};
 use tun_rs::{
     AsyncDevice, DeviceBuilder,
     async_framed::{BytesCodec, DeviceFramed},
@@ -57,7 +55,7 @@ impl TunDevice {
         })
     }
 
-    pub async fn run(self) -> Result<()> {
+    pub async fn run(mut self) -> Result<()> {
         let dev = self.create_device().context("create tun device")?;
         let ifindex = Self::get_ifindex(&self).context("get interface index")?;
 
@@ -79,7 +77,7 @@ impl TunDevice {
         });
 
         tokio::spawn(async move {
-            while let Ok(bytes) = self.to_network_rx.recv() {
+            while let Some(bytes) = self.to_network_rx.next().await {
                 if let Err(e) = tx.send(bytes).await {
                     eprintln!("parse bytes to frame to tun: {:?}", e);
                 }
