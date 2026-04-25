@@ -15,12 +15,25 @@ pub fn base64_decode(encoded: &str) -> Result<Vec<u8>, base64::DecodeError> {
     base64::engine::general_purpose::STANDARD.decode(encoded)
 }
 
+pub fn u8_pair(a: u8, b: u8) -> u16 {
+    ((a as u16) << 8) | b as u16
+}
+
 pub fn ipv4_from_id(id: &EndpointId) -> Ipv4Addr {
     Ipv4Addr::new(10, id[0], id[1], id[2])
 }
 
 pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
-    Ipv6Addr::new(0xfd22, id[0] as u16, 0, 0, 0, 0, 0, 0)
+    Ipv6Addr::new(
+        0xfd22,
+        u8_pair(id[0], id[1]),
+        u8_pair(id[2], id[3]),
+        u8_pair(id[4], id[5]),
+        u8_pair(id[6], id[7]),
+        u8_pair(id[8], id[9]),
+        u8_pair(id[10], id[11]),
+        u8_pair(id[12], id[13]),
+    )
 }
 
 // drains immideately available values from the stream
