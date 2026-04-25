@@ -18,7 +18,7 @@ struct Cli {
     config: String,
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main()]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     let (secret_key, config) = Config::load(&cli.config).context("load config")?;
