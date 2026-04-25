@@ -1,12 +1,11 @@
-use crate::{config::Config, connection_manager::ALPN, router::Router};
+use crate::{config::Config, peer::ALPN, router::Router};
 use anyhow::{Context, Result};
 use clap::Parser;
 use iroh::{Endpoint, endpoint::presets};
 
 mod config;
-mod connection_manager;
+mod peer;
 mod peer_addr;
-mod peer_router;
 mod router;
 mod tun;
 mod utils;

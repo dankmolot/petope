@@ -1,7 +1,8 @@
 use crate::{config::Config, utils};
 use anyhow::{Context, Result, anyhow, bail};
 use bytes::Bytes;
-use futures::{SinkExt, StreamExt};
+use futures::SinkExt;
+use futures_lite::StreamExt;
 use iroh::EndpointId;
 use ring_channel::{RingReceiver, RingSender};
 use std::{
