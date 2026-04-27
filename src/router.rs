@@ -1,4 +1,4 @@
-use crate::{config::Config, peer::Peer, peer_addr::PeerAddr, tun::TunDevice};
+use crate::{config::Config, peer::Peer, peer_addr::PeerAddr, tun::TunDevice, utils};
 use anyhow::{Context, Result};
 use bytes::Bytes;
 use etherparse::IpSlice;
@@ -105,7 +105,6 @@ impl Router {
     ) -> Result<()> {
         let ip = IpSlice::from_slice(&bytes[..]).context("parse incoming ip packet")?;
         let dst = ip.destination_addr();
-        let ipnumber = ip.payload_ip_number();
 
         if me == dst {
             let _ = to_network_tx.send(bytes);
@@ -117,7 +116,8 @@ impl Router {
             return Ok(());
         }
 
-        println!("unknown route -> {} {:?}", dst, ipnumber.keyword_str(),);
+        let packet = utils::unreachable_destination_response(&ip, &bytes, 1280);
+        let _ = to_network_tx.send(packet.freeze());
 
         Ok(())
     }
