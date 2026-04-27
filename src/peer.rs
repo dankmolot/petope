@@ -112,7 +112,9 @@ impl Peer {
             let _ = self.to_network_tx.send(buf.freeze());
         } else {
             eprintln!(
-                "todo: send fragmented packet (len: {} max: {})",
+                "todo: send fragmented packet to {} {:?} (len: {} max: {})",
+                ip.destination_addr(),
+                ip.payload_ip_number().keyword_str(),
                 bytes.len(),
                 max
             );
