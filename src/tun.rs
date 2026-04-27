@@ -113,9 +113,9 @@ impl TunDevice {
             .ipv4(self.ipv4, 32, None)
             .ipv6(self.ipv6, 128)
             .layer(tun_rs::Layer::L3)
-            .with(|opt| {
+            .with(|_opt| {
                 #[cfg(target_os = "macos")]
-                opt.associate_route(false);
+                _opt.associate_route(false);
             })
             .build_async()
     }
