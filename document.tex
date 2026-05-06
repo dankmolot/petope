@@ -573,6 +573,175 @@ go ahead to commit \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb7
 
 \subsection{Configuration}
 
+Since our \href{https://en.wikipedia.org/wiki/Public-key_cryptography}{pair of keys used for cryptography} is also
+acts as identity (Public key is used to connect and to discover a peer), it needs to be persisted somewhere
+so on each launch of the application we would have the same identificator, and able to write down identificators
+of other peers and able to connect to them.
+
+I choose to store both private key and other peer ids in one single configuration file just for sake of "simplicity"
+\footnote{Actually I probably made more complex implementation than if I just used different file for private key.}.
+Also I want so if there is no private key, application would generate it and save in the config file automatically.
+
+Since I want not only to read configuration, but also modify it, I would want to not to override any existing comments inside,
+and since I choose \href{https://toml.io/en/}{Tom's Obvious Minimal Language aka \emph{TOML}}, I have found a Rust library
+\href{https://crates.io/crates/toml_edit}{\texttt{toml\_edit}} which preserves original structure of document while allowing to modify it.
+
+First, I need to be able to specify which config file to use if I want to test application locally. Thankfully it is pretty easy to do with \texttt{clap}.
+
+\begin{figure}[H]
+  \begin{minted}{rust}
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Path to a config file
+    #[arg(short, long, default_value_t = String::from("config.toml"))]
+    config: String,
+}
+
+fn main() {
+  let cli = Cli::parse();
+}
+  \end{minted}
+  \caption{example of argument parsing for config file argument}
+\end{figure}
+
+This way I can specify either \texttt{-c} or \texttt{--config} argument, i.e. {\texttt{-c config2.toml}} to load a config from
+a different file and by default it uses \texttt{config.toml} as initial value. 
+Thanks to \texttt{clap} I also get help page which will tell about this argument and errors are automatically handled. Neat!
+
+
+Second, here is a function which either parses \href{https://en.wikipedia.org/wiki/Base64}{Base64} encoded private key
+from the config file, or generates a new via 
+\href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}
+and saves final configuration file.
+\begin{figure}[H]
+  \begin{minted}{rust}
+fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<SecretKey> {
+    // get a global "private_key" value from parsed file
+    if let Some(encoded) = doc.get("private_key").and_then(|v| v.as_str()) {
+        // try to parse string from base64 into bytes
+        let decoded =
+            utils::base64_decode(encoded).context("private key must be encoded in base64")?;
+
+        // convert to &[u8] and use TryInto which is implemented in SecretKey
+        decoded
+            .as_slice()
+            .try_into()
+            .context("private key must be valid ed25519 key bytes encoded in base64")
+    } else {
+        // No value, no problem, just generate a new
+        let key = SecretKey::generate();
+
+        // insert base64 encoded bytes of private key into document
+        doc.insert(
+            "private_key",
+            utils::base64_encode(&key.clone().to_bytes()).into(),
+        );
+
+        // and write back to the original file
+        std::fs::write(path, doc.to_string())
+            .with_context(|| format!("write {} with generated private key", path))?;
+
+        Ok(key)
+    }
+}
+  \end{minted}
+  \caption{function that parses private key or generates and saves it}
+\end{figure}
+
+Since there is no point of storing private key in the configuration file
+\footnote{Private key is only used during Endpoint creation, there is no need to store it longer than it is used for},
+other configuration options (like peers) are parsed separately from private key like this:
+\begin{figure}[H]
+  \begin{minted}{rust}
+use iroh::{EndpointId, SecretKey};
+use toml_edit::{DocumentMut, Item, Table};
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub peers: Vec<Peer>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Peer {
+    pub id: EndpointId,
+}
+
+impl Config {
+    fn parse(doc: DocumentMut) -> Result<Self> {
+        // iterate over array of tables which looks like this in toml
+        // [[peer]]
+        // ...
+        //
+        // [[peer]]
+        // ...
+        let mut peers = Vec::new();
+        if let Some(arr) = doc.get("peer").and_then(Item::as_array_of_tables) {
+            for (i, t) in arr.iter().enumerate() {
+                peers.push(
+                    // here is parsing of each individual peers happens
+                    Peer::parse(t).with_context(|| format!("parse a [[peer]] at index {}", i))?,
+                );
+            }
+        }
+
+        Ok(Config { peers })
+    }
+}
+
+impl Peer {
+    fn parse(t: &Table) -> Result<Self> {
+        // gets "id" key as a string
+        let id = t
+            .get("id")
+            .and_then(Item::as_str)
+            .ok_or_else(|| anyhow!("expected an `id` but got nothing"))?;
+
+        // Use alias to PublicKey::from_z32 to parse z32 string to public key
+        let id = EndpointId::from_z32(id).context("parse `id` as an EndpointId")?;
+
+        Ok(Peer { id })
+    }
+}
+
+  \end{minted}
+  \caption{parsing fuctions of peers configuration}
+\end{figure}
+
+And then combine \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions into one, and load configuration in main:
+\begin{figure}[H]
+  \begin{minted}{rust}
+impl Config {
+    pub fn load(path: &str) -> Result<(SecretKey, Config)> {
+        // just std::fs::read_to_string(path) which returns an empty string if file
+        let data = Config::read_file(path).with_context(|| format!("read config from {}", path))?;
+
+        // Parse into DocumentMut since we modify it in Config::get_or_generate_secret_key
+        let mut doc = data
+            .parse::<DocumentMut>()
+            .with_context(|| format!("parse {}", path))?;
+
+        let private_key =
+            Config::get_or_generate_secret_key(path, &mut doc).context("get private key")?;
+
+        // Return private key and config seperately
+        Ok((private_key, Config::parse(doc)?))
+    }
+}
+
+fn main() -> Result<()> {
+    // ...
+    let (secret_key, config) = Config::load(&cli.config).context("load config")?;
+    // secret_key can be later used in Endpoint::builder(...).secret_key(secret_key)
+}
+  \end{minted}
+  \caption{final load function which parses both private key and remaining configuration}
+\end{figure}
+
+This way application knows it own private key and public keys (endpoint ids) of other peers.
+Implementation could be simpler but this way I retain flexibility of doing fancy stuff with configuration in future.
 
 \newpage
 \section*{Sources}
