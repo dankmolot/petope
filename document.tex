@@ -555,6 +555,25 @@ to which the code will connect afterwards. One important thing is that a service
 To my suprise it works pretty well, I expected that it would take seconds before a node could discover another node,
 but it all takes a fraction of a second. You can see the entire code at commit \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
 
+\section{Developing final application}
+After trying some tricks to make p2p connection between two peers, I wanted to implement an
+\href{https://en.wikipedia.org/wiki/Minimum_viable_product}{MVP}
+with iroh library which I could even use on my servers or to play with my friends.
+
+It will consist of
+\begin{enumerate}
+  \item Configuration - to persist private key with identity, and add peers
+  \item TUN device - to receive and send IP packets from host
+  \item Router - to route packets to different peers depending on the IP address
+  \item Peer - connected via \texttt{iroh} library to receive and send routed IP packets
+\end{enumerate}
+
+I actually wrote entire application first before writing this part, so if you want to try it first,
+go ahead to commit \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
+
+\subsection{Configuration}
+
+
 \newpage
 \section*{Sources}
 \begin{itemize}
