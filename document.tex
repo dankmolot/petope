@@ -743,6 +743,15 @@ fn main() -> Result<()> {
 This way application knows it own private key and public keys (endpoint ids) of other peers.
 Implementation could be simpler but this way I retain flexibility of doing fancy stuff with configuration in future.
 
+\subsection{TUN device}
+\href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network device}
+which allows a software to receive and send \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP packets}. As far I know all VPNs are using a TUN devices
+\footnote{some rare ones are using a TAP device which allows to access MAC packets, which is mostly useless for regular use-cases.},
+and I'll use it since I want to have an IP address derived from a peer endpoint id, so I could connect to them via any software.
+
+As library I chose \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} since it supports all desktop operating systems
+
+
 \newpage
 \section*{Sources}
 \begin{itemize}
