@@ -1,11 +1,10 @@
 use crate::{config, utils};
 use arc_swap::ArcSwapOption;
-use bytes::Bytes;
-use etherparse::{IpHeadersSlice, IpSlice};
+use bytes::{Bytes, BytesMut};
 use futures_lite::StreamExt;
 use iroh::{
     Endpoint, EndpointId,
-    endpoint::{ConnectError, Connection, ConnectionError, SendDatagramError, VarInt},
+    endpoint::{ConnectError, Connection, ConnectionError, VarInt},
 };
 use ring_channel::{RingReceiver, RingSender};
 use std::{
@@ -13,7 +12,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     sync::Arc,
 };
-use tokio::sync::Notify;
+use tokio::{io::AsyncReadExt, sync::Notify};
 
 pub const ALPN: &[u8] = b"petope/0";
 
@@ -62,9 +61,7 @@ impl Peer {
                 // todo: cache connection reference to prevent unnecessary clones
                 match self.get_connection().await {
                     Ok(conn) => {
-                        if let Err(e) = self.send(&conn, bytes) {
-                            eprintln!("send to {} error: {:?}", self, e);
-                        }
+                        self.send(&conn, bytes).await;
                     }
                     Err(e) => {
                         let dropped = utils::drain(&mut to_peer_rx).await + 1; // drop existing packet since connection failed
@@ -79,46 +76,21 @@ impl Peer {
     }
 
     // sends a datagram or drops it, and handles TooLarge error
-    fn send(&self, conn: &Connection, bytes: Bytes) -> Result<(), SendDatagramError> {
-        if let Some(max) = conn.max_datagram_size() {
-            if bytes.len() > max {
-                self.handle_too_big(bytes, max);
-                return Ok(());
-            }
-        }
+    async fn send(&self, conn: &Connection, bytes: Bytes) {
+        let Ok(mut send) = conn.open_uni().await else {
+            return;
+        };
 
-        conn.send_datagram(bytes)
-    }
+        let id = send.id();
 
-    // handles too big packet either by PMTU or by sending fragmented packet
-    fn handle_too_big(&self, bytes: Bytes, max: usize) {
-        let ip = match IpSlice::from_slice(&bytes[..]) {
-            Ok(ip) => ip,
-            Err(e) => {
-                eprintln!("send to {} bad packet: {:?}", self, e);
+        println!("writing {} bytes to stream {}", bytes.len(), &id);
+
+        tokio::spawn(async move {
+            if let Err(e) = send.write_chunk(bytes).await {
+                eprintln!("stream {} write err: {:?}", id, e);
                 return;
             }
-        };
-
-        let header = ip.header();
-
-        let dont_fragment = match header {
-            IpHeadersSlice::Ipv4(h, _) => h.dont_fragment(),
-            _ => true, // ipv6 routers don't fragment packets
-        };
-
-        if dont_fragment {
-            let buf = utils::fragmentation_needed_response(&ip, &bytes, max);
-            let _ = self.to_network_tx.send(buf.freeze());
-        } else {
-            eprintln!(
-                "todo: send fragmented packet to {} {:?} (len: {} max: {})",
-                ip.destination_addr(),
-                ip.payload_ip_number().keyword_str(),
-                bytes.len(),
-                max
-            );
-        }
+        });
     }
 
     // listens for datagrams for stored internally connection,
@@ -126,14 +98,20 @@ impl Peer {
     async fn listen(&self) {
         loop {
             while let Some(conn) = self.try_get_connection() {
-                while let Ok(bytes) = conn.read_datagram().await {
-                    match IpSlice::from_slice(&bytes[..]) {
-                        Ok(_) => {
-                            // todo ip filtering
-                            let _ = self.to_network_tx.send(bytes).is_err();
+                while let Ok(recv) = conn.accept_uni().await {
+                    let tx = self.to_network_tx.clone();
+                    tokio::spawn(async move {
+                        const MAX: u16 = std::u16::MAX;
+                        let id = recv.id();
+                        let mut buf = BytesMut::with_capacity(MAX.into());
+                        match recv.take(MAX.into()).read_buf(&mut buf).await {
+                            Ok(_) => {
+                                println!("recv {} bytes stream {}", buf.len(), id);
+                                let _ = tx.send(buf.freeze());
+                            }
+                            Err(e) => eprintln!("read stream {} failure: {:?}", id, e),
                         }
-                        Err(e) => eprintln!("bad packet from {}: {:?}", self, e),
-                    }
+                    });
                 }
 
                 // usually when `read_datagram` fails, it means that connection has failed
