@@ -562,16 +562,16 @@ with iroh library which I could even use on my servers or to play with my friend
 
 It will consist of
 \begin{enumerate}
-  \item Configuration - to persist private key with identity, and add peers
-  \item TUN device - to receive and send IP packets from host
-  \item Router - to route packets to different peers depending on the IP address
-  \item Peer - connected via \texttt{iroh} library to receive and send routed IP packets
+  \item Configuration (section~\ref{sec:appconfig}) - to persist private key with identity, and add peers
+  \item TUN device (section~\ref{sec:apptun}) - to receive and send IP packets from host
+  \item Router (section~\ref{sec:approuter}) - to route packets to different peers depending on the IP address
+  \item Peers (section~\ref{sec:apppeers}) - connected via \texttt{iroh} library to receive and send routed IP packets
 \end{enumerate}
 
 I actually wrote entire application first before writing this part, so if you want to try it first,
 go ahead to commit \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
 
-\subsection{Configuration}
+\subsection{Configuration} \label{sec:appconfig}
 
 Since our \href{https://en.wikipedia.org/wiki/Public-key_cryptography}{pair of keys used for cryptography} is also
 acts as identity (Public key is used to connect and to discover a peer), it needs to be persisted somewhere
@@ -743,7 +743,7 @@ fn main() -> Result<()> {
 This way application knows it own private key and public keys (endpoint ids) of other peers.
 Implementation could be simpler but this way I retain flexibility of doing fancy stuff with configuration in future.
 
-\subsection{TUN device}
+\subsection{TUN device} \label{sec:apptun}
 \href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network device}
 which allows a software to receive and send \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP packets}. As far I know all VPNs are using a TUN devices
 \footnote{some rare ones are using a TAP device which allows to access MAC packets, which is mostly useless for regular use-cases.},
@@ -820,6 +820,57 @@ technique which allows to tell the system that "Hey! That packet is too big, ple
 Potentially in future iterations huge MTU can allow to optimize network pipeline even more since less fragmention
 means less data needs to be sent and less CPU usage for fragmenting will be needed.
 
+\subsection{Router} \label{sec:approuter}
+
+First a router needs to receive and send IP packets, program need to move bytes somehow.
+\href{https://en.wikipedia.org/wiki/Channel_(programming)}{Channels} are popular way to pass data between threads,
+and Tokio provides \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
+module, but the main problem is that old queued data is persisted until it is processed.
+It means that \texttt{mpsc} prioritizes old data instead of new, which is not great
+for latency related workloads like a \href{https://en.wikipedia.org/wiki/Real-time_communication}{real-time communcation}.
+
+Instead I found \href{https://github.com/brunocodutra/ring-channel}{\texttt{ring-channel}} library which
+implements a channel \href{https://en.wikipedia.org/wiki/Circular_buffer}{ring buffer} which main
+feature is \href{https://en.wikipedia.org/wiki/Non-blocking_algorithm}{lock-free} buffer manipulation
+and \emph{when buffer is overflown oldest data in queue is replaced with newest}.
+Last feature allows to discard old packets when system is overloaded without any hassle.
+
+Also bytes from TUN device.. well.. are just \emph{bytes}. So I use \href{https://crates.io/crates/etherparse}{\texttt{etherparse}}
+library to parse raw bytes. Here how it is used in router:
+\begin{figure}[H]
+  \begin{minted}{rust}
+fn route(
+    // bytes received from TUN device
+    bytes: Bytes,
+    // ring-channel buffer destined to TUN device
+    to_network_tx: &RingSender<Bytes>
+) -> Result<()> {
+    // parse bytes into a IP packet from etherparse library
+    let ip = IpSlice::from_slice(&bytes[..]).context("parse incoming ip packet")?;
+    // IpAddr from where packet has come
+    let src = ip.source_addr();
+    // IpAddr where packet is destined
+    let dst = ip.destination_addr();
+
+    // this is local packet, just return it back to kernel
+    if src == dst {
+        let _ = to_network_tx.send(bytes);
+        return Ok(());
+    }
+
+    // TODO: send packets to different peers based on IP address
+    
+    Ok(())
+}
+  \end{minted}
+  \caption{route function which parses raw bytes into IP packet for IP address based routing}
+\end{figure}
+
+Already with this code I can use TUN device to process local packets, there is no need for some complex logic.
+Thanks to existing Rust ecosystem, I don't have to learn deeply how IP packets are consisted
+and manually do tidious work, instead I can use straightforward library that does hard work for me.
+
+\subsection{Peers} \label{sec:apppeers}
 
 \newpage
 \section*{Sources}
