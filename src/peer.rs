@@ -11,6 +11,7 @@ use std::{
     fmt::Display,
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     sync::Arc,
+    time::Instant,
 };
 use tokio::{io::AsyncReadExt, sync::Notify};
 
@@ -77,19 +78,26 @@ impl Peer {
 
     // sends a datagram or drops it, and handles TooLarge error
     async fn send(&self, conn: &Connection, bytes: Bytes) {
+        let start = Instant::now();
         let Ok(mut send) = conn.open_uni().await else {
             return;
         };
 
-        let id = send.id();
-
-        println!("writing {} bytes to stream {}", bytes.len(), &id);
+        let id = send.id().index();
+        let len = bytes.len();
 
         tokio::spawn(async move {
             if let Err(e) = send.write_chunk(bytes).await {
                 eprintln!("stream {} write err: {:?}", id, e);
                 return;
             }
+
+            println!(
+                "--> [{}] {} bytes {} ms",
+                id,
+                len,
+                start.elapsed().as_millis()
+            );
         });
     }
 
@@ -99,14 +107,20 @@ impl Peer {
         loop {
             while let Some(conn) = self.try_get_connection() {
                 while let Ok(recv) = conn.accept_uni().await {
+                    let start = Instant::now();
                     let tx = self.to_network_tx.clone();
                     tokio::spawn(async move {
                         const MAX: u16 = std::u16::MAX;
-                        let id = recv.id();
+                        let id = recv.id().index();
                         let mut buf = BytesMut::with_capacity(MAX.into());
                         match recv.take(MAX.into()).read_buf(&mut buf).await {
                             Ok(_) => {
-                                println!("recv {} bytes stream {}", buf.len(), id);
+                                println!(
+                                    "<-- [{}] {} bytes {} ms",
+                                    id,
+                                    buf.len(),
+                                    start.elapsed().as_millis()
+                                );
                                 let _ = tx.send(buf.freeze());
                             }
                             Err(e) => eprintln!("read stream {} failure: {:?}", id, e),
