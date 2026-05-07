@@ -3,7 +3,7 @@ use arc_swap::ArcSwapOption;
 use bytes::{Bytes, BytesMut};
 use futures_lite::StreamExt;
 use iroh::{
-    Endpoint, EndpointId,
+    Endpoint, EndpointId, Watcher,
     endpoint::{ConnectError, Connection, ConnectionError, VarInt},
 };
 use ring_channel::{RingReceiver, RingSender};
@@ -11,7 +11,6 @@ use std::{
     fmt::Display,
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     sync::Arc,
-    time::Instant,
 };
 use tokio::{io::AsyncReadExt, sync::Notify};
 
@@ -78,26 +77,17 @@ impl Peer {
 
     // sends a datagram or drops it, and handles TooLarge error
     async fn send(&self, conn: &Connection, bytes: Bytes) {
-        let start = Instant::now();
         let Ok(mut send) = conn.open_uni().await else {
             return;
         };
 
         let id = send.id().index();
-        let len = bytes.len();
 
         tokio::spawn(async move {
             if let Err(e) = send.write_chunk(bytes).await {
                 eprintln!("stream {} write err: {:?}", id, e);
                 return;
             }
-
-            println!(
-                "--> [{}] {} bytes {} ms",
-                id,
-                len,
-                start.elapsed().as_millis()
-            );
         });
     }
 
@@ -106,23 +96,22 @@ impl Peer {
     async fn listen(&self) {
         loop {
             while let Some(conn) = self.try_get_connection() {
+                let mut paths = conn.paths().stream();
+                tokio::spawn(async move {
+                    while let Some(p) = paths.next().await {
+                        println!("path update: {:?}", p);
+                    }
+                });
+
                 while let Ok(recv) = conn.accept_uni().await {
-                    let start = Instant::now();
                     let tx = self.to_network_tx.clone();
                     tokio::spawn(async move {
                         const MAX: u16 = std::u16::MAX;
-                        let id = recv.id().index();
                         let mut buf = BytesMut::with_capacity(MAX.into());
                         let mut recv = recv.take(MAX.into());
 
                         while recv.read_buf(&mut buf).await.unwrap() != 0 {}
 
-                        println!(
-                            "<-- [{}] {} bytes {} ms",
-                            id,
-                            buf.len(),
-                            start.elapsed().as_millis()
-                        );
                         let _ = tx.send(buf.freeze());
                     });
                 }
