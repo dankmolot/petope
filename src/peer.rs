@@ -113,18 +113,17 @@ impl Peer {
                         const MAX: u16 = std::u16::MAX;
                         let id = recv.id().index();
                         let mut buf = BytesMut::with_capacity(MAX.into());
-                        match recv.take(MAX.into()).read_buf(&mut buf).await {
-                            Ok(_) => {
-                                println!(
-                                    "<-- [{}] {} bytes {} ms",
-                                    id,
-                                    buf.len(),
-                                    start.elapsed().as_millis()
-                                );
-                                let _ = tx.send(buf.freeze());
-                            }
-                            Err(e) => eprintln!("read stream {} failure: {:?}", id, e),
-                        }
+                        let mut recv = recv.take(MAX.into());
+
+                        while recv.read_buf(&mut buf).await.unwrap() != 0 {}
+
+                        println!(
+                            "<-- [{}] {} bytes {} ms",
+                            id,
+                            buf.len(),
+                            start.elapsed().as_millis()
+                        );
+                        let _ = tx.send(buf.freeze());
                     });
                 }
 
