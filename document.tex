@@ -608,12 +608,12 @@ fn main() {
 \end{figure}
 
 This way I can specify either \texttt{-c} or \texttt{--config} argument, i.e. {\texttt{-c config2.toml}} to load a config from
-a different file and by default it uses \texttt{config.toml} as initial value. 
+a different file and by default it uses \texttt{config.toml} as initial value.
 Thanks to \texttt{clap} I also get help page which will tell about this argument and errors are automatically handled. Neat!
 
 
 Second, here is a function which either parses \href{https://en.wikipedia.org/wiki/Base64}{Base64} encoded private key
-from the config file, or generates a new via 
+from the config file, or generates a new via
 \href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}
 and saves final configuration file.
 \begin{figure}[H]
@@ -749,7 +749,76 @@ which allows a software to receive and send \href{https://en.wikipedia.org/wiki/
 \footnote{some rare ones are using a TAP device which allows to access MAC packets, which is mostly useless for regular use-cases.},
 and I'll use it since I want to have an IP address derived from a peer endpoint id, so I could connect to them via any software.
 
-As library I chose \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} since it supports all desktop operating systems
+As library I chose \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} since it supports all desktop operating systems.
+
+First a device needs to be created, and for that \texttt{tun-rs} provides a very simple interface
+\begin{figure}[H]
+  \begin{minted}{rust}
+use tun_rs::{AsyncDevice, DeviceBuilder};
+
+fn create_device() -> std::io::Result<AsyncDevice> {
+    DeviceBuilder::new()
+        .name("petope0") // device name that is shown in ifconfig
+        .mtu(65535) // MTU, usually 1500, minimum 1280 for ipv6 on Linux
+        .ipv4("10.0.0.1", 32, None)
+        .ipv6("fdaa::beaf", 128)
+        .layer(tun_rs::Layer::L3) // specify L3 for TUN device, L2 for TAP
+        .build_async()
+}
+  \end{minted}
+  \caption{example of creating a TUN device with \texttt{tun-rs}}
+  \label{code:create_tun}
+\end{figure}
+
+Then to receive and send IP packets, library has a very useful abstraction on top of
+\href{https://docs.rs/tun-rs/2.8.3/tun_rs/struct.AsyncDevice.html}{AsyncDevice}
+called \href{https://docs.rs/tun-rs/2.8.3/tun_rs/async_framed/index.html}{async\_framed}
+which allows to use high-level asynchronous API to read and write packets instead of manually
+working with \emph{bytes}.
+\begin{figure}[H]
+  \begin{minted}{rust}
+use tun_rs::async_framed::DeviceFramed;
+use futures::{SinkExt, StreamExt};
+
+// it is important to wrap AsyncDevice in Arc so it could be splitted
+let dev = Arc::new(create_device().unwrap());
+// create DeviceFramed and split into send and receive parts
+let (mut rx, mut tx) = DeviceFramed::new(dev, BytesCodec::new()).split();
+
+// task that receives IP packets
+tokio::spawn(async move {
+    // use futures::StreamExt interface to receive
+    while let Some(frame) = rx.next().await {
+        match frame {
+            Ok(bytes) => {
+                // process incoming IP packet from "bytes"
+            }
+            Err(e) => eprintln!("parse frame from tun: {:?}", e),
+        }
+    }
+});
+
+// task that sends packets
+tokio::spawn(async move {
+    // receive a packet from some sort of channel
+    if let Err(e) = tx.send(bytes).await {
+        eprintln!("parse bytes to frame to tun: {:?}", e);
+    }
+});
+  \end{minted}
+  \caption{example of creating a TUN device with \texttt{tun-rs}}
+\end{figure}
+
+As you can see code is pretty simple, and integrates neatly with asynchronous code which is great!
+
+\subsubsection{About huge MTU}
+As you have seen in example code \ref{code:create_tun} I have specified a \emph{huge MTU 65535}, but why?
+
+After reading \href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasil blog post}
+about their default MTU size of 65535, they explained about \href{https://en.wikipedia.org/wiki/Path_MTU_Discovery}{Path MTU Discovery}
+technique which allows to tell the system that "Hey! That packet is too big, please fragment it for $x$ MTU".
+Potentially in future iterations huge MTU can allow to optimize network pipeline even more since less fragmention
+means less data needs to be sent and less CPU usage for fragmenting will be needed.
 
 
 \newpage
