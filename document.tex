@@ -820,6 +820,32 @@ technique which allows to tell the system that "Hey! That packet is too big, ple
 Potentially in future iterations huge MTU can allow to optimize network pipeline even more since less fragmention
 means less data needs to be sent and less CPU usage for fragmenting will be needed.
 
+\subsection{Adding more routes}
+Currently TUN device only has specified local IP addresses, but operating system should know that IP addresses of our peers
+(see section~\ref{sec:apppeers}) should be routed through our TUN device, otherwise application wouldn't be able to receive packets destined to peers.
+
+And for this I found \href{https://crates.io/crates/net-route}{\texttt{net-route}} library which can add routes
+to TUN interface and is cross-platform. Here is an example of adding an IPv4 address routed to our device:
+\begin{figure}[H]
+  \begin{minted}{rust}
+use net_route::{Handle, Route};
+
+// handle is used to manipulate system routing table
+let handle = net_route::Handle::new().unwrap();
+// interface index is used to associate routes with our TUN device
+let ifindex = dev.if_index().unwrap();
+
+// ip address and prefix
+let route = Route::new("10.0.0.2".parse().unwrap(), 32)
+    .with_ifindex(ifindex);
+
+handle.add(&route).await.unwrap(); // add route above to the routing table
+  \end{minted}
+  \caption{example of adding a route with \texttt{net-route} library}
+\end{figure}
+
+Afterwards all packets will go to the TUN interface and application will be able to process them.
+
 \subsection{Router} \label{sec:approuter}
 
 First a router needs to receive and send IP packets, program need to move bytes somehow.
@@ -871,6 +897,9 @@ Thanks to existing Rust ecosystem, I don't have to learn deeply how IP packets a
 and manually do tidious work, instead I can use straightforward library that does hard work for me.
 
 \subsection{Peers} \label{sec:apppeers}
+
+Peer part of the application is responsible to manage a connection, send and receive data.
+Router will be responsible to forward packets from TUN device to individual peers depending on destination address.
 
 \newpage
 \section*{Sources}
