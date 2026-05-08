@@ -811,7 +811,7 @@ tokio::spawn(async move {
 
 As you can see code is pretty simple, and integrates neatly with asynchronous code which is great!
 
-\subsubsection{About huge MTU}
+\subsubsection{About huge MTU} \label{sec:hugemtu}
 As you have seen in example code \ref{code:create_tun} I have specified a \emph{huge MTU 65535}, but why?
 
 After reading \href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasil blog post}
@@ -900,6 +900,290 @@ and manually do tidious work, instead I can use straightforward library that doe
 
 Peer part of the application is responsible to manage a connection, send and receive data.
 Router will be responsible to forward packets from TUN device to individual peers depending on destination address.
+
+I liked the idea of Yggdrasil that their IPv6 addresses represent public key of the node, so why not do the same?
+\begin{figure}[H]
+  \begin{minted}{rust}
+// converts EndpointId into an ipv4 address in 10.0.0.0/8 subnet
+fn ipv4_from_id(id: &EndpointId) -> Ipv4Addr {
+    Ipv4Addr::new(10, id[0], id[1], id[2])
+}
+
+// joins two u8 integers into one u16 integer
+fn u8_pair(a: u8, b: u8) -> u16 {
+    ((a as u16) << 8) | b as u16
+}
+
+// converts EndpointId into an ipv6 address in fd22::/16 subnet
+fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
+    Ipv6Addr::new(
+        0xfd22,
+        u8_pair(id[0], id[1]),
+        u8_pair(id[2], id[3]),
+        u8_pair(id[4], id[5]),
+        u8_pair(id[6], id[7]),
+        u8_pair(id[8], id[9]),
+        u8_pair(id[10], id[11]),
+        u8_pair(id[12], id[13]),
+    )
+}
+  \end{minted}
+  \caption{functions that convert EndpointId (public key) into IP addresses}
+\end{figure}
+
+With these functions application can generate persistent IP addresses both for \emph{TUN interface} and
+\emph{peers}, and they'll be the same on both ends since these IP addresses are converted from public key.
+
+Then it is pretty trivial to implement routing from Router to individual peers based on an IP address:
+\begin{figure}[H]
+  \begin{minted}{rust}
+// example of peer structure
+struct Peer {
+    pub id: EndpointId,
+    pub ipv4: Ipv4Addr,
+    pub ipv6: Ipv6Addr,
+}
+
+impl Peer {
+  pub fn new(id: EndpointId) -> Self {
+    Peer {
+        id,
+        ipv4: ipv4_from_id(id),
+        ipv6: ipv6_from_id(id),
+    }
+  }
+
+  pub async fn send(&self, bytes: Bytes) {
+    // TODO: connect to the peer and send packet
+  }
+}
+
+// map of IpAddr to a Peer for routing packets from TUN device
+let routes: HashMap<IpAddr, Arc<Peer>> = HashMap::new();
+// Example peer
+let peer = Arc::new(Peer::new("abcdef...")); // wrapped around Arc<...> so it can be shared
+
+// Add both ipv4 and ipv6 addresses to point to the peer
+routes.insert(IpAddr::V4(peer.ipv4), peer.clone());
+routes.insert(IpAddr::V6(peer.ipv6), peer.clone());
+
+// Router route function from Router section
+fn route(
+    bytes: Bytes,
+    // ...
+) {
+    // ip packet parsed here with dst IpAddr
+    // ...
+
+    if let Some(target) = routes.get(&dst) {
+        target.send().await;
+        return;
+    }
+}
+  \end{minted}
+  \caption{IP based routing to individual peers}
+\end{figure}
+
+But before a packet could be sent, we need to have an estabilished connection.
+For this a peer who wants to send data must connect to other peer, and other peer must receive
+incoming connection. Initiating connection is pretty simple:
+\begin{figure}[H]
+  \begin{minted}{rust}
+// presets::N0 contain n0 provided relays and discovery services
+let endpoint = Endpoint::builder(presets::N0)
+    .secret_key(secret_key) // secret key retrived from config previouly
+    .alpns(vec![b"petope/0"]) // special string which indicates what protocols are supported
+    .bind() // builds Endpoint
+    .await
+    .unwrap();
+
+// try to connect to the peer by id
+let conn = endpoint.connect(peer.id, b"petope/0").await.unwrap()
+
+// here connection can be cached and used to send and receive data
+  \end{minted}
+  \caption{initiating connection to a peer}
+\end{figure}
+
+Receiving a connection is a little bit more complicated, but still pretty easy too:
+\begin{figure}[H]
+  \begin{minted}{rust}
+// additional map to get a peer by its id
+let peers: HashMap<EndpointId, Arc<Peer>> = HashMap::new();
+
+// store example peer from previous code
+peers.insert(peer.id, peer);
+
+// receive incoming connections until Endpoint was stopped
+while let Some(incoming) = endpoint.accept().await {
+    // finish handshake and get a connection
+    let conn = incoming.await.unwrap() 
+    // find related peer and store connection in it
+    if let Some(peer) = peers.get(&conn.remote_id()) {
+        // TODO: cache connection in peer
+    }
+}
+  \end{minted}
+  \caption{receiving incoming connection from another peer}
+\end{figure}
+
+Both connection and receiving functions are lacking a function that caches a connection.
+Since my code is asynchronous, cached connection could be accessed by multiple
+threads simultaneously, and even replaced by a new connection.
+I could use \href{https://doc.rust-lang.org/std/sync/struct.Mutex.html}{\texttt{std::sync::Mutex}},
+but connection usually would be rarely replaced, but accessed much more frequently.
+\href{https://doc.rust-lang.org/std/sync/struct.RwLock.html}{\texttt{std:sync::RwLock}}
+looks like a better choice, but there is actually a better alternative.
+\href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}} acts similarly
+as to \texttt{RwLock}, but is much more cheaper, and updates don't stop entire code
+from executing. In reality it won't probably matter, but exploring more options won't hurt.
+
+Anyway, here is missing function that caches a connection:
+\begin{figure}[H]
+  \begin{minted}{rust}
+struct Peer {
+    // ...
+    // ArcSwapOption is used since connection can be uninitalized
+    conn: ArcSwapOption<Connection>
+}
+
+impl Peer {
+    pub fn set_connection(&self, conn: Arc<Connection>) {
+        // replace old value with new connection
+        if let Some(old) = self.conn.swap(Some(conn)) {
+            // if there was existing connection, close it
+            old.close(VarInt::from_u32(0), b"outdated");
+        }
+    }
+}
+  \end{minted}
+  \caption{function that stores a connection so it could be used later}
+\end{figure}
+
+Connection is usually only retrieved when some data needs to be sent, so it could also
+automatically try to connect to a peer like this:
+\begin{figure}[H]
+  \begin{minted}{rust}
+impl Peer {
+    // get a connection without automatically connecting
+    pub fn try_get_connection(&self) -> Option<Arc<Connection>> {
+        self.conn
+            .load_full()
+            // return a connection only if it wasn't closed
+            .filter(|conn| conn.close_reason().is_none())
+    }
+
+    // gets current non-closed connection or tries to make a connection
+    pub async fn get_connection(&self) -> Result<Arc<Connection>, ConnectError> {
+        // try to get an existing connection
+        if let Some(conn) = self.try_get_connection() {
+            return Ok(conn);
+        }
+
+        // or try to connect
+        match self.endpoint.connect(self.id, ALPN).await {
+            Ok(conn) => {
+                // connection must be wrapped in Arc due to ArcSwap
+                let conn = Arc::new(conn);
+                // store connection so it will be reused later
+                self.set_connection(conn.clone());
+                Ok(conn)
+            }
+            // just return an error if was unsuccessful
+            Err(e) => Err(e),
+        }
+    }
+}
+  \end{minted}
+  \caption{function that either retrieves existing connection or makes a new one}
+\end{figure}
+
+Almost everything done, last parts are sending IP packets and receiving them from a peer.
+If you remember, TUN device has MTU size of \emph{65535} which is \emph{too big} for typical
+MTU of 1500 bytes. That's where Path MTU Discovery comes into the play mentioned in section~\ref{sec:hugemtu},
+iroh connection provides a minimal available MTU which could be used to tell operating system to which size
+packets should be fragmented via ICMP packets. If you have used a \texttt{ping} command, you are familiar
+that ICMP could be used to ping a machine, and ICMP packets could be blocked to hide a machine on the network.
+Blocking all ICMP packets is actually harmful to the network and should be avoided, instead only
+\href{https://support.huawei.com/enterprise/en/doc/EDOC1100174721/9dff3e87/icmp-echo-request-reply-message}{echo request/reply}
+messages should be blocked if you want to silence them.
+
+As specified in \href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443} IPv6 ICMP has a
+\emph{Packet Too Big} (type 2, code 0) message which indicates that sent packet was too big and sender must reduce packet size
+to given MTU. Also ICMPv6 messages like Packet Too Big must include original IP packet of size that fits minimum MTU.
+\begin{figure}[H]
+  \begin{minted}{rust}
+// returns an icmp response that fragmentation is needed, payload must be the same as ip slice
+pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -> BytesMut {
+    match ip {
+        IpSlice::Ipv4(v4) => {} // very similar to ipv6 version
+        IpSlice::Ipv6(v6) => {
+            let header = v6.header();
+            // convert given mtu in u32, or use maximum u32 integer
+            let mtu = mtu.try_into().unwrap_or(std::u32::MAX);
+            // create a packet destined back to source with PacketTooBig message
+            let builder = PacketBuilder::ipv6(header.destination(), header.source(), HOP_LIMIT)
+                .icmpv6(Icmpv6Type::PacketTooBig { mtu });
+
+            // cut original IP packet so it will fit into MTU
+            let payload_len = payload.len().min(mtu as usize - header.slice().len()); // ipv6 requires entire ip payload in mtu
+            let payload = &payload[..payload_len];
+
+            // write icmp packet into a buffer and return it
+            let mut writer = BytesMut::with_capacity(builder.size(payload.len())).writer();
+            builder.write(&mut writer, payload).unwrap(); // ipv6 does not care about payload size
+            writer.into_inner()
+        }
+    }
+}
+  \end{minted}
+  \caption{function that creates ICMP message when packet is too big}
+\end{figure}
+
+And now that we have all required functions for sending data, let's combine them:
+\begin{figure}[H]
+  \begin{minted}{rust}
+impl Peer {
+    fn send(&self, bytes: Bytes) -> Result<(), SendDatagramError> {
+        match self.get_connection() {
+            Ok(conn) => {
+                // check first if packet fits into MTU
+                if let Some(max) = conn.max_datagram_size() {
+                    // if not, notify sender to reduce packet size
+                    if bytes.len() > max {
+                        self.handle_too_big(bytes, max);
+                        return Ok(());
+                    }
+                }
+
+                // simply send bytes to the connection
+                conn.send_datagram(bytes)
+            }
+            Err(e) => {
+              eprintln!("unable to connect to {}: {:?}", self.id, e);
+              Ok(())
+            }
+        }
+    }
+
+    fn handle_too_big(&self, bytes: Bytes, mtu: usize) {
+        // parse bytes into an ip slice
+        let ip = IpSlice::from_slice(&bytes[..]).unwrap();
+        // create an icmp response based on original packet
+        let response = fragmentation_needed_response(&ip, &bytes[..], mtu);
+        // send response to the TUN interface
+        let _ = self.to_network_tx.send(response.freeze());
+    }
+}
+  \end{minted}
+  \caption{complete send function for peer}
+\end{figure}
+
+Receiving datagrams is very simple, just calls of\texttt{conn.read\_datagram()} in a loop and
+using \\ \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN device.
+
+And that's it, after connecting all these parts from configuration to peers we get
+fully ready P2P VPN solution where each peer is locally configured.
 
 \newpage
 \section*{Sources}
