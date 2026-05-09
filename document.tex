@@ -1194,6 +1194,81 @@ fully ready P2P VPN solution where each peer is locally configured.
 
 \section{Testing how it works}
 
+Because application was written in Rust language, it needs to be compiled first. 
+On their \href{https://rust-lang.org/learn/get-started/}{"Get Started" page} there is a quick guide
+how to install \href{https://en.wikipedia.org/wiki/Software_development_kit}{Rust SDK} on your system.
+
+Then running a command \texttt{"cargo build"} will compile the application to the path \\ \texttt{target/debug/petope},
+which could be used to run the application from a command console. Also application requires administrative priveleges
+since it creates and uses a TUN device, on Linux you'll need to use a \texttt{sudo} command, like \texttt{sudo ./target/debug/petope}.
+
+After launching application first time, it will create a \texttt{config.toml} file and output information in a screenshot above:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/first_run.jpg}
+  \caption{a screenshot which shows current id, IP addresses and empty peers list}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/first_run_config.jpg}
+  \caption{created config.toml file contents after running the application}
+\end{figure}
+
+As you can see the application tells your id and IP addresses. Inside newly created config file there isn't a lot,
+only a private key field so the identity will stay consistent between application starts. 
+Let's run application on my second computer to get its identifier and make a connection later:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/first_run_server.jpg}
+  \caption{a screenshot of started application on second computer}
+\end{figure}
+
+Now that I know IDs and IP addresses of both peers, I can add these IDs into config file like this:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/config_with_peer.jpg}
+  \caption{config.toml that now contains the peer of the second computer}
+\end{figure}
+
+And do the same thing on the second computer, but use peer ID of first computer of course. 
+Now after running the application second time you can see that now it has a \emph{peer} in the list of peers
+with IP addresses that also match IP addresses that were shown on second computer.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/second_run.jpg}
+  \caption{second run of the application with a peer of the second computer}
+\end{figure}
+
+Now while application runs I can connect to the second computer via IP address that was provided by the application,
+and the application will figure out how to connect to the other peer, and cache the connection. 
+After first IP packet destined to the peer, application will discover the peer by its ID, estabilish initial connection
+via a \href{https://docs.iroh.computer/concepts/relays}{relay} and then communicate with the peer to estabilish
+a \href{https://en.wikipedia.org/wiki/Peer-to-peer}{peer-to-peer} connection to communicate directly. 
+You can see this behaviour if you try pinging the peer:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/pinging.jpg}
+  \caption{pinging second computer via both IPv4 and IPv6 addresses provided by the application}
+\end{figure}
+
+As you can see first packet took \emph{405ms}, but next took only \emph{4ms}. This means that under a one second
+application could discover second peer and connect to it directly in a moment, and all without any additional help
+like \href{https://en.wikipedia.org/wiki/Port_forwarding}{port forwarding}
+\footnote{iroh library actually uses protocols like \href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP}
+and \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP} to open ports on a router
+without specifying any rules beforehand.}.
+
+\subsection{Trying something more serious than pinging}
+
+I have tried playing \href{https://en.wikipedia.org/wiki/Minecraft}{Minecraft} game with my friend who lives
+in another country, but at first we couldn't connect to each other, but pings were going through.
+
+The problem was that I have incorrectly implemented ICMP \texttt{Packet Too Big} message, it must include
+a part of original IP packet so system can figure out what connection needs fragmentation. After adding
+original IP packets as a payload to the messages we had absolutely no problem playing together like
+if we were in the same local network.
 
 
 \newpage
