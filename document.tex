@@ -571,6 +571,13 @@ It will consist of
 I actually wrote entire application first before writing this part, so if you want to try it first,
 go ahead to commit \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
 
+And also I have made a small diagram that shows how IP packets are routed in the application.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{5/network_pipeline.png}
+  \label{pipeline of how IP packets are routed between systems}
+\end{figure}
+
 \subsection{Configuration} \label{sec:appconfig}
 
 Since our \href{https://en.wikipedia.org/wiki/Public-key_cryptography}{pair of keys used for cryptography} is also
@@ -1184,6 +1191,10 @@ using \\ \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN
 
 And that's it, after connecting all these parts from configuration to peers we get
 fully ready P2P VPN solution where each peer is locally configured.
+
+\section{Testing how it works}
+
+
 
 \newpage
 \section*{Sources}
