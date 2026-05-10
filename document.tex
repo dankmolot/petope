@@ -344,48 +344,50 @@ and may therefore be suitable for future projects involving peer-to-peer communi
 
 \section{Planning} \label{planning}
 
-First of all, I am certain that I won't be fully developing \emph{my own} protocol,
-since it would require to do extensive work on it.
-I plan on using UDP since it would be easier to do \href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching},
-but at the same time I would be required to work on
-\href{https://www.reddit.com/r/networking/comments/a8c42z/}{delivery reliability}
-and \href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{rate controlling},
-which I am certain I won't be able to do in such small time window for my diploma work.
+At the current stage of the project, the development of a fully original protocol is not considered feasible due to the significant amount of research and implementation effort required.
+Instead, the implementation will be based on existing transport protocols and networking techniques.
+
+UDP is considered as the primary transport protocol because it simplifies the implementation of
+\href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching}.
+However, the use of UDP also requires additional mechanisms for
+\href{https://www.reddit.com/r/networking/comments/a8c42z/}{reliable delivery}
+and
+\href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{congestion and rate control}.
+Implementing these mechanisms from scratch is outside the scope of the available development time for the diploma project.
 
 \subsection{Core functionality} \label{corefunctionality}
 
-After you first launch the app, a crypto key-pair is generated.
-Public key is then used as your identifier.
-So, to connect both peers together, you just put respective identifier to each peer,
-they automatically discover each other and connect. You don't have to put an endpoint to connect,
-everything will be handled automatically as it works in iroh.
+During the initial launch of the application, a cryptographic key pair is generated.
+The public key serves as the identifier of a peer.
+To establish a connection, each peer provides the identifier of the other peer, after which peer discovery and connection establishment are performed automatically.
+Manual specification of network endpoints is therefore unnecessary, similarly to the approach used in iroh.
 
-About IP addresses, if nothing is specified, then they would be cryptographically generated
-from identity, otherwise as specified in config.
+IP addresses are derived cryptographically from the peer identity unless explicitly specified in the configuration.
 
-Also connection failures will be handled on background, if connection to a peer can't be made,
-then constant retries will be done. This also applies to network changes, like Wireguard does it,
-if an IP of one peer changes, then another peer must send packets to a new destination.
+Connection failures are handled automatically in the background.
+If a connection attempt fails, repeated reconnection attempts are performed until connectivity is restored.
+The implementation is also intended to support network changes.
+For example, if the IP address of a peer changes, packets should subsequently be transmitted to the updated destination address, similarly to the behavior of WireGuard.
 
 \subsection{Core choices}
-For programming language I choose Rust, since it is used by iroh which I plan using
-for my final application.
 
-As for protocol, I will be using UDP and then QUIC, since I believe for the start it would
-be easier to deal with more barebones protocol. But I want to try NAT hole-punching with tcp too,
-to see if it is even posssible.
+Rust was selected as the implementation language because it is also used by iroh, which is planned to be integrated into the final application.
 
-About cryptography, I choose \href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{ed25519}
-since I see it is widely used in my ssh keys, Wireguard and iroh too. For symmetric cryptography
-I would use \href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20} since after researching
-\href{https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/}{Reddit},
-\href{https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed}{stackexchange}
-and \href{https://nordpass.com/features/xchacha20-encryption/}{NordPass}
-I can say that ChaCha20 would be better general choice.
-For hashing \href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{blake3}
-and \href{https://en.wikipedia.org/wiki/SHA-2}{SHA2} sound like a sane choice.
+The networking stack is planned to initially use UDP, followed by QUIC.
+Starting with UDP provides a lower-level foundation for understanding and implementing the required networking functionality.
+Additionally, TCP-based NAT hole punching will be investigated to evaluate its feasibility within the project context.
 
-And that's all I think for now, now it is finally time to do some programming!
+For asymmetric cryptography,
+\href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{Ed25519}
+was selected due to its widespread adoption in systems such as SSH, WireGuard, and iroh.
+For symmetric encryption,
+\href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20}
+was selected based on its performance characteristics and broad practical adoption.
+For hashing functions,
+\href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{BLAKE3}
+and
+\href{https://en.wikipedia.org/wiki/SHA-2}{SHA-2}
+are considered suitable choices for the implementation.
 
 
 \section{Simple UDP server/client}
