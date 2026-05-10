@@ -706,25 +706,29 @@ This limitation motivates the discussion presented in the following section.
 
 \section{Multicast DNS}
 
-Instead of trying to discover a node on the internet, we also could try to use a form of \href{https://en.wikipedia.org/wiki/Service_discovery}{Service discovery},
-to be precise \href{https://en.wikipedia.org/wiki/Multicast_DNS}{Multicast DNS} which will allow a node to broadcast
-itself on the local network, and other nodes to discover and connect. This way even without an internet nodes
-still will be able to discover each other and successfully connect.
+In addition to discovering nodes over the Internet, peer discovery can also be performed using a form of
+\href{https://en.wikipedia.org/wiki/Service_discovery}{service discovery}, specifically
+\href{https://en.wikipedia.org/wiki/Multicast_DNS}{Multicast DNS (mDNS)}.
+This approach enables a node to advertise its presence within a local network, allowing other nodes
+to discover and connect to it. Consequently, nodes located on the same local network can establish
+connections without requiring Internet connectivity.
 
 \begin{tcolorbox}
-  Unfortunately this won't help with nodes in different networks but behind one CGNAT,
-  unless an ISP provider implements a NAT hairpinning. IPv6 solves this btw.
+  This approach does not enable communication between nodes located in different networks behind the same
+  carrier-grade NAT (CGNAT), unless the Internet service provider supports NAT hairpinning.
+  IPv6 connectivity mitigates this limitation.
 \end{tcolorbox}
 
-There is a \href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rust library which will help
-me implement the discovery via the code, all I need is to use it instead of a discovery server.
+The \href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rust library was used to implement
+service discovery functionality. The integration primarily required replacing the previously implemented
+discovery server with mDNS-based discovery.
 
-\subsection{Actual implementation}
+\subsection{Implementation}
 
-It was pretty easy to implement the mDNS integration, since API is pretty straightforward
-just like discovery client I have made previously. Here is how my service
-\footnote{service is a record that contains a service type, my IP addresses, hostname, some identificator and properties}
-is created and registered:
+The integration of mDNS functionality was relatively straightforward due to the simplicity of the library API,
+which is conceptually similar to the previously implemented discovery client.
+The following example demonstrates the creation and registration of a service
+\footnote{A service record contains the service type, IP addresses, hostname, identifier, and optional properties.}:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -742,12 +746,12 @@ let service = ServiceInfo::new(
   .enable_addr_auto();
 sd.register(service)?; // ServiceDaemon will handle automatic broadcasting of the service
   \end{minted}
-  \caption{and example of registering a service for discovery via \texttt{mdns-sd}}
+  \caption{Example of registering a service for discovery using \texttt{mdns-sd}}
 \end{figure}
 
 \newpage
 
-Discovery of the service is also very simple:
+Service discovery is implemented as follows:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -779,15 +783,17 @@ loop {
     };
 }
   \end{minted}
-  \caption{discovering other services and finding other peer IP address via \texttt{mdns-sd}}
+  \caption{Discovery of peer services and retrieval of peer IP addresses using \texttt{mdns-sd}}
 \end{figure}
 
-Function above will wait indefinetely until it will discover the node, return the address
-to which the code will connect afterwards. One important thing is that a service name in the service type
-\\ (\textbf{\_name}.\_protocol.domain) can't be longer than 15 symbols.
+The function shown above blocks until the target node is discovered, after which it returns the corresponding
+network address that is subsequently used to establish a connection. One important constraint is that the
+service name component in the service type format
+(\textbf{\_name}.\_protocol.domain) cannot exceed 15 characters.
 
-To my suprise it works pretty well, I expected that it would take seconds before a node could discover another node,
-but it all takes a fraction of a second. You can see the entire code at commit \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
+Experimental evaluation demonstrated that node discovery occurs with low latency, typically within a fraction
+of a second on a local network. The complete implementation is available in commit
+\href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
 
 \section{Developing final application}
 After trying some tricks to make p2p connection between two peers, I wanted to implement an
