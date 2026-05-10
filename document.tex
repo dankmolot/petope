@@ -469,7 +469,7 @@ where messages are represented as plain text strings in the following format:
 
 When the discovery server receives a command, it also obtains the source address of the sender.
 Consequently, after receiving the command \texttt{register|node id}, the server can associate the node identifier with the sender's address, for example:
-\\ \mintinline{js}|nodes["node id"] = "source address"|
+\mintinline{js}|nodes["node id"] = "source address"|
 using a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
 
 \subsection{A node/peer}
@@ -795,47 +795,54 @@ Experimental evaluation demonstrated that node discovery occurs with low latency
 of a second on a local network. The complete implementation is available in commit
 \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
 
-\section{Developing final application}
-After trying some tricks to make p2p connection between two peers, I wanted to implement an
-\href{https://en.wikipedia.org/wiki/Minimum_viable_product}{MVP}
-with iroh library which I could even use on my servers or to play with my friends.
+\section{Developing the Final Application}
 
-It will consist of
+After experimenting with several approaches for establishing a peer-to-peer connection between two peers, a minimum viable product (MVP) was implemented using the
+\href{https://en.wikipedia.org/wiki/Minimum_viable_product}{iroh}
+library. The resulting application was designed to be sufficiently practical for deployment on personal servers and for experimentation in small network environments.
+
+The application consists of the following components:
 \begin{enumerate}
-  \item Configuration (section~\ref{sec:appconfig}) - to persist private key with identity, and add peers
-  \item TUN device (section~\ref{sec:apptun}) - to receive and send IP packets from host
-  \item Router (section~\ref{sec:approuter}) - to route packets to different peers depending on the IP address
-  \item Peers (section~\ref{sec:apppeers}) - connected via \texttt{iroh} library to receive and send routed IP packets
+  \item Configuration (Section~\ref{sec:appconfig}) --- responsible for persisting the private key used for peer identity and storing peer information
+  \item TUN device (Section~\ref{sec:apptun}) --- responsible for receiving and transmitting IP packets from the host system
+  \item Router (Section~\ref{sec:approuter}) --- responsible for forwarding packets to the appropriate peer according to the destination IP address
+  \item Peers (Section~\ref{sec:apppeers}) --- connected through the \texttt{iroh} library to exchange routed IP packets
 \end{enumerate}
 
-I actually wrote entire application first before writing this part, so if you want to try it first,
-go ahead to commit \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
+The implementation of the application preceded the writing of this section. The corresponding source code is available in commit
+\href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
 
-And also I have made a small diagram that shows how IP packets are routed in the application.
+Figure~\ref{fig:network_pipeline} illustrates the packet routing pipeline implemented in the application.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/network_pipeline.png}
-  \caption{pipeline of how IP packets are routed between systems}
+  \caption{Pipeline illustrating routing of IP packets between systems}
+  \label{fig:network_pipeline}
 \end{figure}
 
 \newpage
 
 \subsection{Configuration} \label{sec:appconfig}
 
-Since our \href{https://en.wikipedia.org/wiki/Public-key_cryptography}{pair of keys used for cryptography} is also
-acts as identity (Public key is used to connect and to discover a peer), it needs to be persisted somewhere
-so on each launch of the application we would have the same identificator, and able to write down identificators
-of other peers and able to connect to them.
+The
+\href{https://en.wikipedia.org/wiki/Public-key_cryptography}{cryptographic key pair}
+serves not only as a security mechanism but also as the identity of a peer. 
+The public key is used both for peer discovery and for establishing connections. 
+Consequently, the private key must be persisted so that the application maintains a stable identifier across executions and can reliably connect to previously known peers.
 
-I choose to store both private key and other peer ids in one single configuration file just for sake of "simplicity"
-\footnote{Actually I probably made more complex implementation than if I just used different file for private key.}.
-Also I want so if there is no private key, application would generate it and save in the config file automatically.
+For simplicity, both the private key and peer identifiers are stored in a single configuration file.
+\footnote{An alternative design could separate the private key into a dedicated file.}
+If no private key is present in the configuration, the application automatically generates one and stores it in the configuration file.
 
-Since I want not only to read configuration, but also modify it, I would want to not to override any existing comments inside,
-and since I choose \href{https://toml.io/en/}{Tom's Obvious Minimal Language aka \emph{TOML}}, I have found a Rust library
-\href{https://crates.io/crates/toml_edit}{\texttt{toml\_edit}} which preserves original structure of document while allowing to modify it.
+Because the configuration must support both reading and modification while preserving existing comments and formatting, the
+\href{https://toml.io/en/}{TOML}
+format was selected together with the Rust library
+\href{https://crates.io/crates/toml_edit}{\texttt{toml\_edit}},
+which preserves the original document structure during modification.
 
-First, I need to be able to specify which config file to use if I want to test application locally. Thankfully it is pretty easy to do with \texttt{clap}.
+To facilitate local testing, the application allows the configuration file path to be specified through
+command-line arguments. This functionality is implemented using the \texttt{clap} library.
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -853,19 +860,21 @@ fn main() {
     let cli = Cli::parse();
 }
   \end{minted}
-  \caption{example of argument parsing for config file argument}
+  \caption{Argument parsing for selecting a configuration file}
 \end{figure}
 
-This way I can specify either \texttt{-c} or \texttt{--config} argument, i.e. {\texttt{-c config2.toml}} to load a config from
-a different file and by default it uses \texttt{config.toml} as initial value.
-Thanks to \texttt{clap} I also get help page which will tell about this argument and errors are automatically handled. Neat!
+This implementation enables the use of either the \texttt{-c} or \texttt{--config} argument, for example \texttt{-c config2.toml}, 
+to load an alternative configuration file. By default, the application loads \texttt{config.toml}. 
+The \texttt{clap} library additionally provides automatically generated help messages and error handling.
 
 \newpage
 
-Second, here is a function which either parses \href{https://en.wikipedia.org/wiki/Base64}{Base64} encoded private key
-from the config file, or generates a new via
-\href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}
-and saves final configuration file.
+The following function either parses a
+\href{https://en.wikipedia.org/wiki/Base64}{Base64}-encoded private key
+from the configuration file or generates a new key using
+\href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}.
+If a new key is generated, the updated configuration is written back to disk.
+
 \begin{figure}[H]
   \begin{minted}{rust}
 fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<SecretKey> {
@@ -898,14 +907,15 @@ fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<Secre
     }
 }
   \end{minted}
-  \caption{function that parses private key or generates and saves it}
+  \caption{Function for parsing or generating a private key}
 \end{figure}
 
 \newpage
 
-Since there is no point of storing private key in the configuration file
-\footnote{Private key is only used during Endpoint creation, there is no need to store it longer than it is used for},
-other configuration options (like peers) are parsed separately from private key like this:
+Since the private key is only required during endpoint creation,
+\footnote{The private key is used exclusively during endpoint initialization and does not need to be retained afterward.}
+the remaining configuration data, such as peer definitions, is parsed independently.
+
 \begin{figure}[H]
   \begin{minted}{rust}
 use iroh::{EndpointId, SecretKey};
@@ -959,12 +969,14 @@ impl Peer {
 }
 
   \end{minted}
-  \caption{parsing fuctions of peers configuration}
+  \caption{Functions for parsing peer configuration}
 \end{figure}
 
 \newpage
 
-And then combine \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions into one, and load configuration in main:
+Finally, the \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions are combined into a single loading function, 
+which is invoked during application initialization.
+
 \begin{figure}[H]
   \begin{minted}{rust}
 impl Config {
@@ -991,11 +1003,11 @@ fn main() -> Result<()> {
     // secret_key can be later used in Endpoint::builder(...).secret_key(secret_key)
 }
   \end{minted}
-  \caption{final load function which parses both private key and remaining configuration}
+  \caption{Configuration loading function}
 \end{figure}
 
-This way application knows it own private key and public keys (endpoint ids) of other peers.
-Implementation could be simpler but this way I retain flexibility of doing fancy stuff with configuration in future.
+This design enables the application to maintain its own private key while storing the public identifiers of remote peers. 
+Although the implementation introduces additional complexity, it preserves flexibility for future extensions of the configuration system.
 
 \subsection{TUN device} \label{sec:apptun}
 \href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network device}
@@ -1460,7 +1472,7 @@ impl Peer {
 \end{figure}
 
 Receiving datagrams is very simple, just calls of \texttt{conn.read\_datagram()} in a loop and
-using \\ \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN device.
+using \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN device.
 
 And that's it, after connecting all these parts from configuration to peers we get
 fully ready P2P VPN solution where each peer is locally configured.
@@ -1471,7 +1483,7 @@ Because application was written in Rust language, it needs to be compiled first.
 On their \href{https://rust-lang.org/learn/get-started/}{"Get Started" page} there is a quick guide
 how to install \href{https://en.wikipedia.org/wiki/Software_development_kit}{Rust SDK} on your system.
 
-Then running a command \texttt{"cargo build"} will compile the application to the path \\ \texttt{target/debug/petope},
+Then running a command \texttt{"cargo build"} will compile the application to the path \texttt{target/debug/petope},
 which could be used to run the application from a command console. Also application requires administrative priveleges
 since it creates and uses a TUN device, on Linux you'll need to use a \texttt{sudo} command, like \texttt{sudo ./target/debug/petope}.
 
