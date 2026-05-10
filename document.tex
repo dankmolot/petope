@@ -57,9 +57,9 @@
 
 % format sections by the work format requirements
 \usepackage{titlesec}
-% section (14pt, uppercase, page break before, 12pt spacing)
+% section (14pt, uppercase, 12pt spacing)
 \titleformat{\section}
-  {\clearpage\bfseries\fontsize{14pt}{16pt}\selectfont}
+  {\bfseries\fontsize{14pt}{16pt}\selectfont}
   {\thesection}{1em}{\MakeUppercase}
 \titlespacing*{\section}{0pt}{12pt}{12pt}
 % subsction (12pt, uppercase, 12pt spacing)
@@ -95,31 +95,134 @@
 ]{hyperref}
 \usepackage{xurl}
 
+% add page break before each section
+\let\oldsection\section
+\renewcommand{\section}{
+  \clearpage
+  \oldsection
+}
+
 % For estonian
 % \renewcommand{\contentsname}{Sisukord}
 % \renewcommand{\figurename}{Joonis}
 
+\newcommand{\theauthor}{Retro }
+\newcommand{\theteacher}{Õpetaja }
+
 
 \title{petope - a VPN development project}
-\author{Retro}
+\author{\theauthor}
 \date{2026}
 
 \begin{document}
 
 \maketitle
-
-% Title page does not have numbering
 \thispagestyle{empty}
 
+\section*{AUTORIDEKLARATSIOON}
+
+Deklareerin, et käesolev lõputöö, mis on minu iseseisva töö tulemus, on esitatud Tallinna 
+Polütehnikumi lõputunnistuse taotlemiseks Tarkvaraarendaja erialal. Lõputöö alusel ei ole 
+varem eriala lõputunnistust taotletud.
+
+\vspace{4em}
+
+Autor \theauthor \emph{<allkirjastatud digitaalselt>}
+
+\vspace{4em}
+
+
+Töö vastab kehtivatele nõuetele
+
+\vspace{4em}
+
+Juhendaja \theteacher \emph{<allkirjastatud digitaalselt>}
+
+\thispagestyle{empty}
 
 
 \clearpage
 \tableofcontents
-
-% Page numbering starts from second page
 \setcounter{page}{1}
 
+\section*{Explanation of terms and abbreviations}
 
+\begin{description}
+  \item[ALPN] Application-Layer Protocol Negotiation; a protocol-negotiation mechanism used with TLS/QUIC to agree on the application protocol.
+  \item[API] Application Programming Interface; a set of functions or endpoints that software uses to interact with a library or service.
+  \item[Async programming] A programming style where tasks yield control while waiting, so other work can continue without blocking.
+  \item[Base64] A binary-to-text encoding used to store raw bytes in text files or transmit them safely as text.
+  \item[BitTorrent] A peer-to-peer file-sharing protocol.
+  \item[CGNAT] Carrier-Grade NAT; NAT performed by an ISP so many customers share one public IPv4 address.
+  \item[CLI] Command-Line Interface; a text-based way to run or configure a program.
+  \item[Control plane] The coordination layer that handles authentication, discovery, and network management.
+  \item[DDoS] Distributed Denial-of-Service; an attack that overwhelms a service with traffic from many sources.
+  \item[Decentralization] A system design that avoids dependence on one central authority.
+  \item[DNS] Domain Name System; the naming system that translates host names to IP addresses.
+  \item[Distributed Hash Table (DHT)] A decentralized lookup table spread across peers, used for storing and finding keys without a central server.
+  \item[Dynamic DNS] A service that updates DNS records automatically when a public IP address changes.
+  \item[Endpoint] A device or node participating in network communication.
+  \item[EndpointId] An \texttt{iroh} identifier for an endpoint, derived from the endpoint's public key.
+  \item[Encryption] The process of converting data into ciphertext so unauthorized parties cannot read it.
+  \item[Firewall] A security system that filters incoming and outgoing network traffic according to rules.
+  \item[Git] A distributed version control system.
+  \item[Gossip protocol] A peer-to-peer message propagation method where information is forwarded through multiple peers.
+  \item[HashMap] A key-value data structure that supports fast lookup by key.
+  \item[Iroh] A peer-to-peer networking library used in the final application design.
+  \item[IP] Internet Protocol; the basic protocol used to address and route packets across networks.
+  \item[IPv4] Internet Protocol version 4; a 32-bit IP addressing scheme.
+  \item[IPv6] Internet Protocol version 6; a 128-bit IP addressing scheme.
+  \item[ISP] Internet Service Provider; a company that provides internet access.
+  \item[Kademlia] A distributed lookup protocol used in many DHT-based systems.
+  \item[L2] Layer 2; the data-link layer, where Ethernet and MAC traffic live.
+  \item[L3] Layer 3; the network layer, where IP packets are routed.
+  \item[Loopback] A local interface that lets a machine communicate with itself.
+  \item[Mainline DHT] The BitTorrent DHT implementation based on Kademlia.
+  \item[Mesh VPN] A VPN architecture where peers connect directly to each other in a mesh instead of through one central relay.
+  \item[MTU] Maximum Transmission Unit; the largest packet size a network can send without fragmentation.
+  \item[Multicast] A delivery method where one packet is sent to multiple recipients at the same time.
+  \item[mDNS] Multicast DNS; local-network service discovery that works like DNS without a central DNS server.
+  \item[NAT] Network Address Translation; a mechanism that lets multiple devices share one public IP address.
+  \item[NAT hairpinning / NAT loopback] A router feature that lets devices inside a network reach a host using its public address.
+  \item[NAT hole punching] A technique that creates NAT mappings so two peers can connect directly.
+  \item[NAT traversal] Any technique used to get packets through NATs and firewalls to reach another peer.
+  \item[Open source] Software whose source code is publicly available and modifiable.
+  \item[Packet] A unit of data sent across a network.
+  \item[Peer-to-peer (P2P)] A networking model where devices communicate directly with each other.
+  \item[Plug-and-play] Designed to work with minimal manual configuration.
+  \item[Path MTU Discovery] A method for finding the largest packet size that can travel across a path without fragmentation.
+  \item[Private key] A secret cryptographic key used for signing, decryption, or authentication.
+  \item[Proprietary software] Software whose source code is not publicly available.
+  \item[Public key] A cryptographic key that can be shared publicly for encryption or identity verification.
+  \item[QUIC] A modern transport protocol built on UDP with built-in encryption and multiplexing.
+  \item[Radicle] A decentralized collaboration platform for Git repositories.
+  \item[Radmin VPN] A proprietary VPN application often used for gaming and remote access.
+  \item[Relay server] An intermediate server that forwards traffic between devices.
+  \item[Rust] A systems programming language focused on safety and performance.
+  \item[SecretKey] An iroh private-key type used to create or identify an endpoint.
+  \item[Service discovery] A mechanism for automatically finding devices or services on a network.
+  \item[SYN] A TCP synchronization flag used to start the connection handshake.
+  \item[Socket] An endpoint used for network communication.
+  \item[SO\_REUSEPORT] A socket option that allows multiple sockets to bind the same local address and port on supported systems.
+  \item[Tailnet] The private network created and managed by Tailscale.
+  \item[Tailscale] A mesh VPN service that connects devices directly over encrypted tunnels.
+  \item[TCP] Transmission Control Protocol; a connection-oriented transport protocol.
+  \item[TCP hole punching] A technique that attempts to establish a direct TCP connection through NATs.
+  \item[Tokio] An asynchronous runtime for Rust.
+  \item[TOML] Tom's Obvious, Minimal Language; a human-friendly configuration file format.
+  \item[Tracker] A server that helps BitTorrent peers discover each other.
+  \item[TUN device / interface] A virtual network interface that carries IP packets in user space.
+  \item[TAP] A virtual network interface that carries Ethernet frames rather than IP packets.
+  \item[UDP] User Datagram Protocol; a lightweight, connectionless transport protocol.
+  \item[UDP hole punching] A technique for creating a direct UDP path through NATs.
+  \item[WireGuard] A modern VPN protocol and implementation known for simplicity and speed.
+  \item[Yggdrasil] A decentralized IPv6 mesh networking project.
+  \item[Zeroconf] Zero-configuration networking; automatic local discovery without manual setup.
+\end{description}
+
+\emph{This list was generated with help of ChatGPT.}
+
+\phantomsection
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
 
@@ -162,6 +265,8 @@ So, after being amazed by how Tailscale works internally, I want to learn by
 creating my own VPN solution, learn from my mistakes and while developing everything needed,
 and maybe even create something for gamers around the world to use to play together.
 And I am totally okay if I won't be able to handle such project, I am sure I will learn a lot of stuff!
+
+\emph{ChatGPT was used to translate this document from English to Estonian. Original work was fully written in English.}
 
 \section{Researching existing solutions} \label{existingsolutions}
 
@@ -215,7 +320,12 @@ Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.rad
 which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
 For example, imagine this connection between peers:
 
-$$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
+\begin{figure}[H]
+  $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
+  \caption{a diagram that shows connection between peers}
+\end{figure}
+
+\newpage
 
 So, peer A wants to connect to peer D, but does not know its address.
 Peer A \emph{gossips} to peer B, peer B gossips to peer C, and finally peer C returns
@@ -282,7 +392,8 @@ And that's all I think for now, now it is finally time to do some programming!
 As my starting point I choose to look into \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation about udp socket},
 and wrote following code:
 
-\begin{minted}{rust}
+\begin{figure}[H]
+  \begin{minted}{rust}
 fn server() {
     let socket = UdpSocket::bind("127.0.0.1:3333").unwrap();
 
@@ -317,14 +428,25 @@ fn client() {
         src
     );
 }
-\end{minted}
+  \end{minted}
+  \caption{example code server and client built on top of UDP}
+\end{figure}
+
+\newpage
 
 Aand I get this after running both server and the client:
 
-\begin{center}
+\begin{figure}[H]
+  \centering
   \includegraphics[width=\textwidth]{1/server.png}
+  \caption{a screenshot which shows received message from a client}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
   \includegraphics[width=\textwidth]{1/client.png}
-\end{center}
+  \caption{a screenshot which shows received reversed message from a server}
+\end{figure}
 
 As you can see, I got a message sent from a client to the server,
 and server replied with reversed message.
@@ -344,7 +466,7 @@ and messages will consist of simple text strings in format of:
 
 When a discovery server receives a command, it also receives a source address,
 this way after receiving \texttt{register|node id} command discovery server
-can save source address like: \mintinline{js}|nodes["node id"] = "source address"|
+can save source address like: \\ \mintinline{js}|nodes["node id"] = "source address"|
 in a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
 
 \subsection{A node/peer}
@@ -361,20 +483,31 @@ so you can see an implementation of discovery server on commit
 
 Since right now discovery uses simple text udp protocol,
 I can test it via \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
-\begin{center}
-  \includegraphics[width=\textwidth]{2/netcat_discovery_example.png}
 
-  And here are discovery logs:
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{2/netcat_discovery_example.png}
+  \caption{a screenshot of sending commands with netcat utility}
+\end{figure}
 
+\begin{figure}[H]
+  \centering
   \includegraphics[width=\textwidth]{2/discovery_server_logs.png}
-\end{center}
+  \caption{a screenshot of discovery server logs}
+\end{figure}
+
 
 Great! Now I only need to run both nodes, and wait before they connect to each other.
 
-\begin{center}
+\begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_alpha.png}
+  \caption{a screenshot of node alpha receiving a connection from node beta}
+\end{figure}
+
+\begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_beta.png}
-\end{center}
+  \caption{a screenshot of node beta making a connection with node alpha}
+\end{figure}
 
 Here you can see that node \texttt{beta} has reached node \texttt{alpha},
 and node \texttt{alpha} responded back. Both nodes have found adresses
@@ -396,14 +529,14 @@ Discovery server will be ran on my rented virtual server provided by Hetzner wit
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{3/node_on_a_pc.png}
-  \caption{successful reply from the phone to the notebook}
+  \caption{a successful reply from the phone to the notebook}
   \label{fig:udp_punch_pc}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{3/node_on_a_phone.png}
-  \caption{successful incoming message from the notebook to the phone}
+  \caption{a successful incoming message from the notebook to the phone}
   \label{fig:udp_punch_phone}
 \end{figure}
 
@@ -417,7 +550,9 @@ and since they both sent a packet to each other, NAT routers started allowing in
 First phone got the message, and afterwards the notebook received
 a reply from the phone.
 
-\subsection{About failures}
+\newpage
+
+\subsection{About my failures}
 
 At first I have tried connecting both nodes from the same network,
 my home Wi-Fi, but both nodes weren't receiving incoming packets.
@@ -461,7 +596,8 @@ to a discovery server, register our node id, and then try to connect to another 
 same local address and port.
 
 Simple example of using \href{https://crates.io/crates/socket2}{socket2} library:
-\begin{minted}{rust}
+\begin{figure}[H]
+  \begin{minted}{rust}
 use std::io;
 use socket2::{Domain, Protocol, Socket, Type};
 
@@ -485,7 +621,9 @@ fn main() {
     second_socket.bind(local_addr).unwrap(); // reuse same ip:port as in first socket
     second_socket.listen(128).unwrap(); // run socket in listen mode
 }
-\end{minted}
+  \end{minted}
+  \caption{an example of using \texttt{socket2} library to create reusable socket}
+\end{figure}
 
 Without \mintinline{rust}|Socket::set_reuse_port(true)|, this code would fail with an
 "Address already in use" error, which you can try to reproduce by changing \texttt{true} to \texttt{false}.
@@ -522,6 +660,8 @@ tries to make a connection to another node. And suprsingly this time it has work
 
 So less talking and more showing. Setup is the same, one node on my notebook with a home WiFi,
 and another one is my phone connected to a mobile network.
+
+\newpage
 
 \begin{figure}[H]
   \centering
@@ -578,7 +718,8 @@ just like discovery client I have made previously. Here is how my service
 \footnote{service is a record that contains a service type, my IP addresses, hostname, some identificator and properties}
 is created and registered:
 
-\begin{minted}{rust}
+\begin{figure}[H]
+  \begin{minted}{rust}
 let sd = ServiceDaemon::new()?; // Daemon from mdns-sd
 let hostname = utils::get_hostname()?; // returns current hostname with `.local.` appended
 let service = ServiceInfo::new(
@@ -586,16 +727,22 @@ let service = ServiceInfo::new(
     &args.id, // identificator, derived from arguments, i.e. "notebook"
     &hostname, // device hostname that must end with .local.
     (), // ip addresses, we use .enable_addr_auto() so the library will add addresses for us
-    local_addr.port(), // this is a port of the listener socket, so other node will know to which port to connect to
+    local_addr.port(), // use the same port as socket port
     None, // properties, we don't use any
 )?
-.enable_addr_auto();
+  // automatically populate IP addresses from network interfaces
+  .enable_addr_auto();
 sd.register(service)?; // ServiceDaemon will handle automatic broadcasting of the service
-\end{minted}
+  \end{minted}
+  \caption{and example of registering a service for discovery via \texttt{mdns-sd}}
+\end{figure}
+
+\newpage
 
 Discovery of the service is also very simple:
 
-\begin{minted}{rust}
+\begin{figure}[H]
+  \begin{minted}{rust}
 // fullname consists in form of identification + service type
 let node_fullname = format!("{}.{}", node_id, "_petope._tcp.local.");
 let receiver = sd.browse("_petope._tcp.local.")?;
@@ -623,7 +770,9 @@ loop {
         _ => {}
     };
 }
-\end{minted}
+  \end{minted}
+  \caption{discovering other services and finding other peer IP address via \texttt{mdns-sd}}
+\end{figure}
 
 Function above will wait indefinetely until it will discover the node, return the address
 to which the code will connect afterwards. One important thing is that a service name in the service type
@@ -652,8 +801,10 @@ And also I have made a small diagram that shows how IP packets are routed in the
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/network_pipeline.png}
-  \label{pipeline of how IP packets are routed between systems}
+  \caption{pipeline of how IP packets are routed between systems}
 \end{figure}
+
+\newpage
 
 \subsection{Configuration} \label{sec:appconfig}
 
@@ -685,7 +836,7 @@ struct Cli {
 }
 
 fn main() {
-  let cli = Cli::parse();
+    let cli = Cli::parse();
 }
   \end{minted}
   \caption{example of argument parsing for config file argument}
@@ -695,6 +846,7 @@ This way I can specify either \texttt{-c} or \texttt{--config} argument, i.e. {\
 a different file and by default it uses \texttt{config.toml} as initial value.
 Thanks to \texttt{clap} I also get help page which will tell about this argument and errors are automatically handled. Neat!
 
+\newpage
 
 Second, here is a function which either parses \href{https://en.wikipedia.org/wiki/Base64}{Base64} encoded private key
 from the config file, or generates a new via
@@ -734,6 +886,8 @@ fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<Secre
   \end{minted}
   \caption{function that parses private key or generates and saves it}
 \end{figure}
+
+\newpage
 
 Since there is no point of storing private key in the configuration file
 \footnote{Private key is only used during Endpoint creation, there is no need to store it longer than it is used for},
@@ -794,6 +948,8 @@ impl Peer {
   \caption{parsing fuctions of peers configuration}
 \end{figure}
 
+\newpage
+
 And then combine \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions into one, and load configuration in main:
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -834,6 +990,8 @@ which allows a software to receive and send \href{https://en.wikipedia.org/wiki/
 and I'll use it since I want to have an IP address derived from a peer endpoint id, so I could connect to them via any software.
 
 As library I chose \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} since it supports all desktop operating systems.
+
+\newpage
 
 First a device needs to be created, and for that \texttt{tun-rs} provides a very simple interface
 \begin{figure}[H]
@@ -894,6 +1052,8 @@ tokio::spawn(async move {
 \end{figure}
 
 As you can see code is pretty simple, and integrates neatly with asynchronous code which is great!
+
+\newpage
 
 \subsubsection{About huge MTU} \label{sec:hugemtu}
 As you have seen in example code \ref{code:create_tun} I have specified a \emph{huge MTU 65535}, but why?
@@ -980,6 +1140,8 @@ Already with this code I can use TUN device to process local packets, there is n
 Thanks to existing Rust ecosystem, I don't have to learn deeply how IP packets are consisted
 and manually do tidious work, instead I can use straightforward library that does hard work for me.
 
+\newpage
+
 \subsection{Peers} \label{sec:apppeers}
 
 Peer part of the application is responsible to manage a connection, send and receive data.
@@ -1019,6 +1181,8 @@ fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
 
 With these functions application can generate persistent IP addresses both for \emph{TUN interface} and
 \emph{peers}, and they'll be the same on both ends since these IP addresses are converted from public key.
+
+\newpage
 
 \subsubsection{Routing packets to peers}
 
@@ -1071,6 +1235,8 @@ fn route(
   \end{minted}
   \caption{IP based routing to individual peers}
 \end{figure}
+
+\newpage
 
 \subsubsection{Making a connection with a peer}
 
@@ -1127,6 +1293,8 @@ looks like a better choice, but there is actually a better alternative.
 \href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}} acts similarly
 as to \texttt{RwLock}, but is much more cheaper, and updates don't stop entire code
 from executing. In reality it won't probably matter, but exploring more options won't hurt.
+
+\newpage
 
 Anyway, here is missing function that caches a connection:
 \begin{figure}[H]
@@ -1188,6 +1356,8 @@ impl Peer {
   \caption{function that either retrieves existing connection or makes a new one}
 \end{figure}
 
+\newpage
+
 \subsubsection{Telling system to fragment a packet}
 
 Almost everything done, last parts are sending IP packets and receiving them from a peer.
@@ -1218,7 +1388,7 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
                 .icmpv6(Icmpv6Type::PacketTooBig { mtu });
 
             // cut original IP packet so it will fit into MTU
-            let payload_len = payload.len().min(mtu as usize - header.slice().len()); // ipv6 requires entire ip payload in mtu
+            let payload_len = payload.len().min(mtu as usize - header.slice().len());
             let payload = &payload[..payload_len];
 
             // write icmp packet into a buffer and return it
@@ -1231,6 +1401,8 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
   \end{minted}
   \caption{function that creates ICMP message when packet is too big}
 \end{figure}
+
+\newpage
 
 \subsubsection{Sending a packet to a peer}
 
@@ -1273,7 +1445,7 @@ impl Peer {
   \caption{complete send function for peer}
 \end{figure}
 
-Receiving datagrams is very simple, just calls of\texttt{conn.read\_datagram()} in a loop and
+Receiving datagrams is very simple, just calls of \texttt{conn.read\_datagram()} in a loop and
 using \\ \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN device.
 
 And that's it, after connecting all these parts from configuration to peers we get
@@ -1312,6 +1484,8 @@ Let's run application on my second computer to get its identifier and make a con
   \caption{a screenshot of started application on second computer}
 \end{figure}
 
+\newpage
+
 Now that I know IDs and IP addresses of both peers, I can add these IDs into config file like this:
 \begin{figure}[H]
   \centering
@@ -1327,6 +1501,8 @@ with IP addresses that also match IP addresses that were shown on second compute
   \includegraphics[width=\textwidth]{5/second_run.jpg}
   \caption{second run of the application with a peer of the second computer}
 \end{figure}
+
+\newpage
 
 Now while application runs I can connect to the second computer via IP address that was provided by the application,
 and the application will figure out how to connect to the other peer, and cache the connection.
@@ -1358,6 +1534,7 @@ original IP packets as a payload to the messages we had absolutely no problem pl
 if we were in the same local network.
 
 
+\phantomsection
 \section*{Summary}
 \addcontentsline{toc}{section}{Summary}
 
@@ -1379,10 +1556,11 @@ In the end the developed application works under most circumstances, robust and 
 I am certain that my work is already proves to be useful even in such basic state.
 In the future I plan to extend and improve the application for my personal use and to play together with my friends in games.
 
+\phantomsection
 \section*{Summary (võõrnekeelne)}
 \addcontentsline{toc}{section}{Summary (võõrnekeelne)}
 
-This work is about "petope - a VPN development project" where Retro was learning and developing his own
+This work is about "petope - a VPN development project" where \theauthor was learning and developing his own
 VPN solution that is based on peer-to-peer techniques to estabilish direct connection between computers.
 
 Main motivation for the work was a product Tailscale which uses peer-to-peer techniques and provides
@@ -1390,31 +1568,32 @@ user-friendly configuration of the network. Main goal of the work was to learn h
 work under the hood and experiment with them, while in the end creating an application which will be
 able to connect to other peers on the internet and create a virtual private network from these peers.
 
-During the work Retro researched existing techniques and applications that are relevant to the topic.
-After research Retro has implemented a "Discovery server" which associates an IP address with port
+During the work \theauthor researched existing techniques and applications that are relevant to the topic.
+After research \theauthor has implemented a "Discovery server" which associates an IP address with port
 to an arbirtary identifier which later could be used to get IP address with port, and
 developed a program which connects directly via TCP and UDP to another computer with technique "hole-punching".
-Also Retro has tried using Multicast DNS network protocol as an alternative to the "Discovery server" to find
+Also \theauthor has tried using Multicast DNS network protocol as an alternative to the "Discovery server" to find
 a peer in the local network.
 
-After these experiments Retro has developed a fully functional VPN application which uses a library "iroh"
+After these experiments \theauthor has developed a fully functional VPN application which uses a library "iroh"
 to make direct connections similar to Tailscale. Each computer has an indivual identifier which could be retrieved
 after launching application first time, and is derived from a private key which is also used for encryption.
 In a configuration file after specifying other peers identifiers, while the application is running an user
 is able to communicate with other peer via uniquely generated IP addresses while the application maintains
 a connection to peer and rouing of IP packets.
 
-In the end Retro has attained a valuable knowledge and developed an useful application.
+In the end \theauthor has attained a valuable knowledge and developed an useful application.
 
 
-\section*{Sources}
-\addcontentsline{toc}{section}{Sources}
-\begin{itemize}
-  \item \url{https://yggdrasil-network.github.io/implementation.html}
-  \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}
-  \item \url{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}
-  \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
-\end{itemize}
+% \phantomsection
+% \section*{Sources}
+% \addcontentsline{toc}{section}{Sources}
+% \begin{itemize}
+%   \item \url{https://yggdrasil-network.github.io/implementation.html}
+%   \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}
+%   \item \url{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}
+%   \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
+% \end{itemize}
 
 
 \end{document}
