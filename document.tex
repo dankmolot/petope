@@ -35,8 +35,8 @@
 \newpage
 
 
-\addcontentsline{toc}{section}{Introduction}
 \section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
 
 When someone asks how can they connect to their server at home,
 for example on \href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit,
@@ -70,7 +70,8 @@ No need to add peers to each device, open ports, manage routing. Plug-n-play sol
 
 Also it makes a great solution when you want to play with your friends together,
 but there is much simpler to use alternative named \href{https://www.radmin-vpn.com/}{Radmin VPN},
-which has somewhat similiar functionality, but is proprietary, and I just don't like it.
+which has somewhat similiar functionality, but it is proprietary which means individual user can't be sure
+how the program works and if it contains malicious code.
 
 So, after being amazed by how Tailscale works internally, I want to learn by
 creating my own VPN solution, learn from my mistakes and while developing everything needed,
@@ -1279,6 +1280,57 @@ The problem was that I have incorrectly implemented ICMP \texttt{Packet Too Big}
 a part of original IP packet so system can figure out what connection needs fragmentation. After adding
 original IP packets as a payload to the messages we had absolutely no problem playing together like
 if we were in the same local network.
+
+
+\newpage
+\section*{Summary}
+\addcontentsline{toc}{section}{Summary}
+
+During this I was attaining valuable knowledge of how different techniques work to establish direct connections
+between two computers (or peer-to-peer) even behind closed to the internet networks like home and office networks.
+Thanks to this work I researched a field about which previously I had very basic understanding and now I am
+more confident in building similar systems.
+
+After the research I have experimented with core techniques of establishing direct connection between two computers
+on the internet that are unaccesible under normal circumstances, while using a custom made solution to be able
+to discover how connection could be made using an arbitrary identifier.
+
+After successful experiments with core techniques, I have fully developed an application can be used
+as a VPN solution which establishes direct connections to defined peers by using \texttt{iroh} library.
+Library provides an identifier that represent a public key used for encryption and also used to dynamically
+discover provided peers on the internet and find paths of possible connections to the peer.
+
+In the end the developed application works under most circumstances, robust and easy to understand due to clear and simple code. 
+I am certain that my work is already proves to be useful even in such basic state.
+In the future I plan to extend and improve the application for my personal use and to play together with my friends in games.
+
+\newpage
+\section*{Summary (võõrnekeelne)}
+\addcontentsline{toc}{section}{Summary (võõrnekeelne)}
+
+This work is about "petope - a VPN development project" where Retro was learning and developing his own
+VPN solution that is based on peer-to-peer techniques to estabilish direct connection between computers.
+
+Main motivation for the work was a product Tailscale which uses peer-to-peer techniques and provides
+user-friendly configuration of the network. Main goal of the work was to learn how peer-to-peer techniques
+work under the hood and experiment with them, while in the end creating an application which will be
+able to connect to other peers on the internet and create a virtual private network from these peers.
+
+During the work Retro researched existing techniques and applications that are relevant to the topic.
+After research Retro has implemented a "Discovery server" which associates an IP address with port
+to an arbirtary identifier which later could be used to get IP address with port, and
+developed a program which connects directly via TCP and UDP to another computer with technique "hole-punching".
+Also Retro has tried using Multicast DNS network protocol as an alternative to the "Discovery server" to find
+a peer in the local network.
+
+After these experiments Retro has developed a fully functional VPN application which uses a library "iroh"
+to make direct connections similar to Tailscale. Each computer has an indivual identifier which could be retrieved
+after launching application first time, and is derived from a private key which is also used for encryption.
+In a configuration file after specifying other peers identifiers, while the application is running an user
+is able to communicate with other peer via uniquely generated IP addresses while the application maintains
+a connection to peer and rouing of IP packets.
+
+In the end Retro has attained a valuable knowledge and developed an useful application.
 
 
 \newpage
