@@ -1010,16 +1010,16 @@ This design enables the application to maintain its own private key while storin
 Although the implementation introduces additional complexity, it preserves flexibility for future extensions of the configuration system.
 
 \subsection{TUN device} \label{sec:apptun}
-\href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network device}
-which allows a software to receive and send \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP packets}. As far I know all VPNs are using a TUN devices
-\footnote{some rare ones are using a TAP device which allows to access MAC packets, which is mostly useless for regular use-cases.},
-and I'll use it since I want to have an IP address derived from a peer endpoint id, so I could connect to them via any software.
+A \href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network interface}
+that enables software applications to transmit and receive \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP packets}. TUN devices are commonly used in VPN implementations
+\footnote{Certain implementations use TAP devices instead, which operate at the MAC layer and provide access to Ethernet frames.},
+and are suitable for this project because they allow IP addresses to be derived from peer endpoint identifiers, enabling communication through standard networking software.
 
-As library I chose \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} since it supports all desktop operating systems.
+The \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} library was selected because it provides support for all major desktop operating systems.
 
 \newpage
 
-First a device needs to be created, and for that \texttt{tun-rs} provides a very simple interface
+To initialize a TUN device, \texttt{tun-rs} provides a concise configuration interface:
 \begin{figure}[H]
   \begin{minted}{rust}
 use tun_rs::{AsyncDevice, DeviceBuilder};
@@ -1034,15 +1034,15 @@ fn create_device() -> std::io::Result<AsyncDevice> {
         .build_async()
 }
   \end{minted}
-  \caption{example of creating a TUN device with \texttt{tun-rs}}
+  \caption{Example of creating a TUN device with \texttt{tun-rs}}
   \label{code:create_tun}
 \end{figure}
 
-Then to receive and send IP packets, library has a very useful abstraction on top of
+To transmit and receive IP packets, the library provides a higher-level abstraction over
 \href{https://docs.rs/tun-rs/2.8.3/tun_rs/struct.AsyncDevice.html}{AsyncDevice}
-called \href{https://docs.rs/tun-rs/2.8.3/tun_rs/async_framed/index.html}{async\_framed}
-which allows to use high-level asynchronous API to read and write packets instead of manually
-working with \emph{bytes}.
+through the \href{https://docs.rs/tun-rs/2.8.3/tun_rs/async_framed/index.html}{async\_framed}
+module. This abstraction exposes an asynchronous interface for packet processing, avoiding the need
+for manual manipulation of raw byte streams.
 \begin{figure}[H]
   \begin{minted}{rust}
 use tun_rs::async_framed::DeviceFramed;
@@ -1074,28 +1074,29 @@ tokio::spawn(async move {
     }
 });
   \end{minted}
-  \caption{example of creating a TUN device with \texttt{tun-rs}}
+  \caption{Example of asynchronous packet transmission and reception using \texttt{tun-rs}}
 \end{figure}
 
-As you can see code is pretty simple, and integrates neatly with asynchronous code which is great!
+The implementation integrates directly with the asynchronous execution model provided by Tokio, simplifying concurrent packet processing.
 
 \newpage
 
 \subsubsection{About huge MTU} \label{sec:hugemtu}
-As you have seen in example code \ref{code:create_tun} I have specified a \emph{huge MTU 65535}, but why?
+As shown in Listing~\ref{code:create_tun}, the TUN device is configured with an MTU value of 65535.
 
-After reading \href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasil blog post}
-about their default MTU size of 65535, they explained about \href{https://en.wikipedia.org/wiki/Path_MTU_Discovery}{Path MTU Discovery}
-technique which allows to tell the system that "Hey! That packet is too big, please fragment it for $x$ MTU".
-Potentially in future iterations huge MTU can allow to optimize network pipeline even more since less fragmention
-means less data needs to be sent and less CPU usage for fragmenting will be needed.
+This configuration was motivated by the discussion presented in the
+\href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasil blog post}
+regarding large MTU values and \href{https://en.wikipedia.org/wiki/Path_MTU_Discovery}{Path MTU Discovery}.
+Path MTU Discovery enables intermediate systems to notify endpoints when packets exceed the supported transmission size, allowing fragmentation to occur at an appropriate MTU.
+
+A larger MTU may reduce fragmentation overhead in future iterations of the system, potentially decreasing both bandwidth overhead and CPU utilization associated with packet fragmentation.
 
 \subsubsection{Adding more routes}
-Currently TUN device only has specified local IP addresses, but operating system should know that IP addresses of our peers
-(see section~\ref{sec:apppeers}) should be routed through our TUN device, otherwise application wouldn't be able to receive packets destined to peers.
+At this stage, the TUN device only contains locally assigned IP addresses. However, the operating system routing table must also contain routes for peer addresses
+(see Section~\ref{sec:apppeers}) so that packets destined for peers are forwarded through the TUN interface.
 
-And for this I found \href{https://crates.io/crates/net-route}{\texttt{net-route}} library which can add routes
-to TUN interface and is cross-platform. Here is an example of adding an IPv4 address routed to our device:
+To manage routing entries, the \href{https://crates.io/crates/net-route}{\texttt{net-route}} library was used because it provides cross-platform route manipulation support. 
+The following example demonstrates how to add an IPv4 route associated with the TUN device:
 \begin{figure}[H]
   \begin{minted}{rust}
 use net_route::{Handle, Route};
@@ -1111,28 +1112,30 @@ let route = Route::new("10.0.0.2".parse().unwrap(), 32)
 
 handle.add(&route).await.unwrap(); // add route above to the routing table
   \end{minted}
-  \caption{example of adding a route with \texttt{net-route} library}
+  \caption{Example of adding a route using the \texttt{net-route} library}
 \end{figure}
 
-Afterwards all packets will go to the TUN interface and application will be able to process them.
+After the route is added, packets addressed to the specified destination are forwarded through the TUN interface, 
+allowing the application to process them.
 
 \subsection{Router} \label{sec:approuter}
 
-First a router needs to receive and send IP packets, program need to move bytes somehow.
-\href{https://en.wikipedia.org/wiki/Channel_(programming)}{Channels} are popular way to pass data between threads,
-and Tokio provides \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
-module, but the main problem is that old queued data is persisted until it is processed.
-It means that \texttt{mpsc} prioritizes old data instead of new, which is not great
-for latency related workloads like a \href{https://en.wikipedia.org/wiki/Real-time_communication}{real-time communcation}.
+The router component is responsible for transmitting and receiving IP packets. 
+Consequently, an efficient mechanism for transferring packet data between asynchronous tasks is required.
 
-Instead I found \href{https://github.com/brunocodutra/ring-channel}{\texttt{ring-channel}} library which
-implements a channel \href{https://en.wikipedia.org/wiki/Circular_buffer}{ring buffer} which main
-feature is \href{https://en.wikipedia.org/wiki/Non-blocking_algorithm}{lock-free} buffer manipulation
-and \emph{when buffer is overflown oldest data in queue is replaced with newest}.
-Last feature allows to discard old packets when system is overloaded without any hassle.
+\href{https://en.wikipedia.org/wiki/Channel_(programming)}{Channels} are commonly used for communication between threads and asynchronous tasks.
+Tokio provides the \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
+module for this purpose. However, standard queue-based channels preserve older messages until they are processed, thereby prioritizing earlier packets over more recent ones. 
+Such behavior may negatively affect latency-sensitive workloads, including
+\href{https://en.wikipedia.org/wiki/Real-time_communication}{real-time communication} systems.
 
-Also bytes from TUN device.. well.. are just \emph{bytes}. So I use \href{https://crates.io/crates/etherparse}{\texttt{etherparse}}
-library to parse raw bytes. Here how it is used in router:
+To address this limitation, the \href{https://github.com/brunocodutra/ring-channel}{\texttt{ring-channel}} library was selected.
+This library implements a \href{https://en.wikipedia.org/wiki/Circular_buffer}{ring-buffer}-based channel
+with \href{https://en.wikipedia.org/wiki/Non-blocking_algorithm}{lock-free} synchronization semantics.
+When the buffer capacity is exceeded, older packets are overwritten by newer packets, enabling the system to discard stale data during periods of overload.
+
+Since data received from the TUN device consists of raw byte sequences, the \href{https://crates.io/crates/etherparse}{\texttt{etherparse}}
+library is used to parse IP packets. The following example illustrates its usage within the router implementation:
 \begin{figure}[H]
   \begin{minted}{rust}
 fn route(
@@ -1159,14 +1162,11 @@ fn route(
     Ok(())
 }
   \end{minted}
-  \caption{route function which parses raw bytes into IP packet for IP address based routing}
+  \caption{Routing function that parses raw bytes into IP packets for address-based routing}
 \end{figure}
 
-Already with this code I can use TUN device to process local packets, there is no need for some complex logic.
-Thanks to existing Rust ecosystem, I don't have to learn deeply how IP packets are consisted
-and manually do tidious work, instead I can use straightforward library that does hard work for me.
-
-\newpage
+This implementation already enables local packet processing through the TUN interface without requiring complex routing logic.
+The existing Rust ecosystem significantly reduces implementation complexity by providing reusable abstractions for IP packet parsing and asynchronous networking operations.
 
 \subsection{Peers} \label{sec:apppeers}
 
