@@ -261,76 +261,86 @@ and potentially create a tool for gamers to use for online play. Even if the pro
 
 \section{Researching existing solutions} \label{existingsolutions}
 
-Since I like \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self hosting}
-different stuff on my servers, I also like to have control of my data,
-particulary don't give a third-party control to it.
-That's why I don't fully enjoy Tailscale and Radmin VPN solutions:
+An interest in \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self-hosting}
+various services on personal servers motivated an emphasis on maintaining control over personal data
+and reducing reliance on third-party infrastructure.
+For this reason, solutions such as Tailscale and Radmin VPN were considered unsuitable in certain aspects:
 \begin{itemize}
-  \item Radmin VPN is fully proprietary, so they control the server- and client-side.
-        There is nothing stopping them from adding collecting data or even stealing from my PC,
-        or adding unauthorized device to my network.
-  \item Tailscale has open-source client, but control-plane is fully proprietary and controls
-        how client operates. In case of its compomise, your connected devices are fully open
-        unless you have configured a firewall. But I trust Tailscale company much more,
-        and it feels like a fair trade of security and convinience.
+  \item Radmin VPN is fully proprietary, meaning that both the server-side and client-side components
+        are controlled by the vendor. As a result, users have limited ability to verify the behavior
+        of the software or audit its security guarantees.
+  \item Tailscale provides an open-source client implementation; however, its control plane remains proprietary
+        and governs client coordination and network management. Consequently, compromise of the control infrastructure
+        could potentially expose connected devices unless additional security measures, such as firewall configuration,
+        are applied. Nevertheless, Tailscale represents a practical balance between usability and security.
 \end{itemize}
 
-But projects like \href{https://syncthing.net/}{Syncthing} and \href{https://yggdrasil-network.github.io/}{Yggdrasil}
-inspire me to create something more decentralized, where each device in control of to whom to trust,
-and don't rely on single server which commands to whom he can connect and how.
+Projects such as \href{https://syncthing.net/}{Syncthing} and \href{https://yggdrasil-network.github.io/}{Yggdrasil}
+demonstrate alternative decentralized approaches in which each device independently determines trust relationships
+without relying on a centralized authority responsible for connection management.
 
-I really liked Yggdrasil approach to the network -
-each client is also a server, and an IPv6 address of a client also represents his public key.
-This way when you send a packet to an IPv6 address, you can already encrypt message
-by using the address, and only client who has right private key can decrypt it.
-It is very cool idea since without a single authority you can be sure
-that only correct recipient can decrypt and see your messages, and other peers
-in the network relay the message until it gets to the right recipient.
-Decentralization power, hell yeah!
+In particular, the networking model used by Yggdrasil was of significant interest.
+Within this architecture, each client simultaneously functions as a server, while an IPv6 address also represents
+the node's public key.
+This design enables packets to be encrypted directly using the destination address, ensuring that only the node
+possessing the corresponding private key can decrypt the transmitted data.
+As a result, communication confidentiality can be maintained without dependence on a centralized authority,
+while intermediate peers merely relay encrypted traffic toward the intended recipient.
 
-But without a central server there is no way to find a way how to connect to a peer on the internet.
-\href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent}
-in \href{https://torrentfreak.com/bittorrents-dht-turns-10-years-old-150607/}{old days (before 2005)}
-used \href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}
-to find other peers for a torrent you want to download.
-The problem is that \emph{distributed file-sharing} relies on \emph{a central server}.
-\footnote{which could be improved by using multiple trackers, but it is still not as \emph{distributed}}
-To overcome this problem, nowadays \href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
-use \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based \href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
-aka \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}.
-Basically each peer becomes a distributed tracker, and you stop relying on a single server to find other peers.
-This way even if all trackers become offline, you still will be able to find other peers on the internet.
-I recommend watching \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} for more in-depth explanation.
+However, fully decentralized systems introduce the challenge of peer discovery.
+Without a central coordination server, nodes require alternative methods for locating peers on the Internet.
+Historically, \href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent}
+relied on \href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}
+to identify peers participating in a particular file-sharing session.
+This approach created a dependency on centralized infrastructure despite the distributed nature of the protocol itself.
+\footnote{The use of multiple trackers can improve resilience, although the architecture still retains partially centralized characteristics.}
 
-\href{https://radicle.xyz/}{Radicle} is another project that aims to bring
-p2p to \href{https://en.wikipedia.org/wiki/Git}{Git version control}
-which by itself is distributed, but since it is cumbersome to colaborate
-in decentralized way, people often use centralized \href{https://en.wikipedia.org/wiki/Forge_(software)}{servers or \emph{forges}}
-like \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
-Radicle uses its own protocol named \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood}
-which uses a \href{https://radicle.xyz/guides/protocol}{Gossip protocol} to discover other peers and repositories.
-For example, imagine this connection between peers:
+To address this limitation, modern
+\href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
+commonly employ a \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based
+\href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
+referred to as \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}.
+In this model, each peer participates in a distributed tracking infrastructure,
+eliminating dependence on a single centralized server for peer discovery.
+Consequently, peer discovery remains functional even if all dedicated trackers become unavailable.
+A detailed explanation of this mechanism is provided in the video
+\href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kademlia, Explained}.
+
+Another relevant project is \href{https://radicle.xyz/}{Radicle},
+which applies peer-to-peer networking principles to
+\href{https://en.wikipedia.org/wiki/Git}{Git version control}.
+Although Git itself is inherently distributed, collaboration is frequently facilitated through centralized
+\href{https://en.wikipedia.org/wiki/Forge_(software)}{forge platforms}
+such as \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
+Radicle introduces its own protocol, named
+\href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood},
+which utilizes a \href{https://radicle.xyz/guides/protocol}{gossip protocol}
+for peer and repository discovery.
+
+For example, consider the following peer topology:
 
 \begin{figure}[H]
   $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
-  \caption{a diagram that shows connection between peers}
+  \caption{A diagram illustrating connections between peers}
 \end{figure}
 
 \newpage
 
-So, peer A wants to connect to peer D, but does not know its address.
-Peer A \emph{gossips} to peer B, peer B gossips to peer C, and finally peer C returns
-response back to peer A. This example shows linear propagation, but in reality a gossip request
-propagates through entire network simultaneosly through multiple peers, and each peer stores unique ID
-of a gossip request to ignore it next time to prevent a DDoS. This way even without having a direct contact
-with peer D, peer A can request information from it.
+Suppose peer A intends to communicate with peer D but does not possess its network address.
+Peer A propagates a gossip request to peer B, which forwards the request to peer C, and eventually to peer D.
+Responses are then routed back through the network.
+While this example demonstrates linear propagation, practical implementations distribute requests simultaneously
+through multiple peers across the network.
+To prevent excessive propagation and denial-of-service amplification, each peer stores identifiers of previously processed requests
+and ignores duplicates.
+This mechanism enables communication and information exchange even in the absence of direct connectivity between peers.
 
-But also after researching watching the \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kadmelia, Explained} video
-I also have started watching other videos from channel \href{https://www.youtube.com/channel/UCdWMU1dBMmB4SrMokGI4jvA}{number 0},
-and found out their video \href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{introducing iroh},
-a library written in \href{https://rust-lang.org/}{Rust} that does P2P connection between peers effortlessly,
-and it just works. After researching this library, it points almost all checks for me, and I would totally use it
-for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
+Additional investigation into peer-to-peer networking technologies led to the discovery of
+\href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{iroh},
+a networking library implemented in \href{https://rust-lang.org/}{Rust}.
+The library provides abstractions for establishing peer-to-peer communication with minimal configuration complexity.
+Preliminary evaluation indicated that the library satisfies many of the requirements identified for decentralized networking systems
+and may therefore be suitable for future projects involving peer-to-peer communication.
 
 \section{Planning} \label{planning}
 
