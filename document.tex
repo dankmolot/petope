@@ -103,18 +103,16 @@
 }
 
 % For estonian
-% \renewcommand{\contentsname}{Sisukord}
-% \renewcommand{\figurename}{Joonis}
+\renewcommand{\contentsname}{Sisukord}
+\renewcommand{\figurename}{Joonis}
 
 \newcommand{\theauthor}{Retro }
 \newcommand{\theteacher}{Õpetaja }
 
 
-\title{petope - a VPN development project}
-\author{\theauthor}
-\date{2026}
-
 \begin{document}
+
+\sloppy
 
 \begin{center}
   \Large
@@ -125,7 +123,7 @@
 
   \theauthor
 
-  {\huge DEVELOPING A P2P VPN APPLICATION}
+  {\huge P2P VPN-RAKENDUSE ARETAMINE}
 
   Lõputöö
 
@@ -133,7 +131,6 @@
   TA-22V
 
   \vspace*{\fill}
-
 
   \begin{flushright}
     Juhendaja: \theteacher
@@ -160,269 +157,262 @@ Autor \theauthor \emph{<allkirjastatud digitaalselt>}
 
 \vspace{4em}
 
-
 Töö vastab kehtivatele nõuetele
 
 \vspace{4em}
 
 Juhendaja \theteacher \emph{<allkirjastatud digitaalselt>}
 
-\thispagestyle{empty}
-
+\setcounter{page}{1}
 
 \clearpage
 \tableofcontents
-\setcounter{page}{1}
 
-\section*{Explanation of terms and abbreviations}
+\section*{Mõistete ja lühendite selgitused}
 
 \begin{description}
-  \item[ALPN] Application-Layer Protocol Negotiation; a protocol-negotiation mechanism used with TLS/QUIC to agree on the application protocol.
-  \item[API] Application Programming Interface; a set of functions or endpoints that software uses to interact with a library or service.
-  \item[Async programming] A programming style where tasks yield control while waiting, so other work can continue without blocking.
-  \item[Base64] A binary-to-text encoding used to store raw bytes in text files or transmit them safely as text.
-  \item[BitTorrent] A peer-to-peer file-sharing protocol.
-  \item[CGNAT] Carrier-Grade NAT; NAT performed by an ISP so many customers share one public IPv4 address.
-  \item[CLI] Command-Line Interface; a text-based way to run or configure a program.
-  \item[Control plane] The coordination layer that handles authentication, discovery, and network management.
-  \item[DDoS] Distributed Denial-of-Service; an attack that overwhelms a service with traffic from many sources.
-  \item[Decentralization] A system design that avoids dependence on one central authority.
-  \item[DNS] Domain Name System; the naming system that translates host names to IP addresses.
-  \item[Distributed Hash Table (DHT)] A decentralized lookup table spread across peers, used for storing and finding keys without a central server.
-  \item[Dynamic DNS] A service that updates DNS records automatically when a public IP address changes.
-  \item[Endpoint] A device or node participating in network communication.
-  \item[EndpointId] An \texttt{iroh} identifier for an endpoint, derived from the endpoint's public key.
-  \item[Encryption] The process of converting data into ciphertext so unauthorized parties cannot read it.
-  \item[Firewall] A security system that filters incoming and outgoing network traffic according to rules.
-  \item[Git] A distributed version control system.
-  \item[Gossip protocol] A peer-to-peer message propagation method where information is forwarded through multiple peers.
-  \item[HashMap] A key-value data structure that supports fast lookup by key.
-  \item[Iroh] A peer-to-peer networking library used in the final application design.
-  \item[IP] Internet Protocol; the basic protocol used to address and route packets across networks.
-  \item[IPv4] Internet Protocol version 4; a 32-bit IP addressing scheme.
-  \item[IPv6] Internet Protocol version 6; a 128-bit IP addressing scheme.
-  \item[ISP] Internet Service Provider; a company that provides internet access.
-  \item[Kademlia] A distributed lookup protocol used in many DHT-based systems.
-  \item[L2] Layer 2; the data-link layer, where Ethernet and MAC traffic live.
-  \item[L3] Layer 3; the network layer, where IP packets are routed.
-  \item[Loopback] A local interface that lets a machine communicate with itself.
-  \item[Mainline DHT] The BitTorrent DHT implementation based on Kademlia.
-  \item[Mesh VPN] A VPN architecture where peers connect directly to each other in a mesh instead of through one central relay.
-  \item[MTU] Maximum Transmission Unit; the largest packet size a network can send without fragmentation.
-  \item[Multicast] A delivery method where one packet is sent to multiple recipients at the same time.
-  \item[mDNS] Multicast DNS; local-network service discovery that works like DNS without a central DNS server.
-  \item[NAT] Network Address Translation; a mechanism that lets multiple devices share one public IP address.
-  \item[NAT hairpinning / NAT loopback] A router feature that lets devices inside a network reach a host using its public address.
-  \item[NAT hole punching] A technique that creates NAT mappings so two peers can connect directly.
-  \item[NAT traversal] Any technique used to get packets through NATs and firewalls to reach another peer.
-  \item[Open source] Software whose source code is publicly available and modifiable.
-  \item[Packet] A unit of data sent across a network.
-  \item[Peer-to-peer (P2P)] A networking model where devices communicate directly with each other.
-  \item[Plug-and-play] Designed to work with minimal manual configuration.
-  \item[Path MTU Discovery] A method for finding the largest packet size that can travel across a path without fragmentation.
-  \item[Private key] A secret cryptographic key used for signing, decryption, or authentication.
-  \item[Proprietary software] Software whose source code is not publicly available.
-  \item[Public key] A cryptographic key that can be shared publicly for encryption or identity verification.
-  \item[QUIC] A modern transport protocol built on UDP with built-in encryption and multiplexing.
-  \item[Radicle] A decentralized collaboration platform for Git repositories.
-  \item[Radmin VPN] A proprietary VPN application often used for gaming and remote access.
-  \item[Relay server] An intermediate server that forwards traffic between devices.
-  \item[Rust] A systems programming language focused on safety and performance.
-  \item[Software Development Kit (SDK)] A collection of software development tools in one installable package.
-  \item[SecretKey] An iroh private-key type used to create or identify an endpoint.
-  \item[Service discovery] A mechanism for automatically finding devices or services on a network.
-  \item[SYN] A TCP synchronization flag used to start the connection handshake.
-  \item[Socket] An endpoint used for network communication.
-  \item[SO\_REUSEPORT] A socket option that allows multiple sockets to bind the same local address and port on supported systems.
-  \item[Tailnet] The private network created and managed by Tailscale.
-  \item[Tailscale] A mesh VPN service that connects devices directly over encrypted tunnels.
-  \item[TCP] Transmission Control Protocol; a connection-oriented transport protocol.
-  \item[TCP hole punching] A technique that attempts to establish a direct TCP connection through NATs.
-  \item[Tokio] An asynchronous runtime for Rust.
-  \item[TOML] Tom's Obvious, Minimal Language; a human-friendly configuration file format.
-  \item[Tracker] A server that helps BitTorrent peers discover each other.
-  \item[TUN device / interface] A virtual network interface that carries IP packets in user space.
-  \item[TAP] A virtual network interface that carries Ethernet frames rather than IP packets.
-  \item[UDP] User Datagram Protocol; a lightweight, connectionless transport protocol.
-  \item[UDP hole punching] A technique for creating a direct UDP path through NATs.
-  \item[WireGuard] A modern VPN protocol and implementation known for simplicity and speed.
-  \item[Yggdrasil] A decentralized IPv6 mesh networking project.
-  \item[Zeroconf] Zero-configuration networking; automatic local discovery without manual setup.
+  \item[ALPN] Application-Layer Protocol Negotiation; TLS/QUIC-iga kasutatav protokolliläbirääkimise mehhanism, mille abil lepitakse kokku kasutatav rakendusprotokoll.
+  \item[API] Application Programming Interface (rakendusliides); funktsioonide või lõpp-punktide kogum, mida tarkvara kasutab teegi või teenusega suhtlemiseks.
+  \item[Async programming] Asünkroonne programmeerimine; programmeerimisstiil, kus ülesanded loovutavad ootamise ajal juhtimise, võimaldades teistel tegevustel jätkuda ilma blokeerimiseta.
+  \item[Base64] Binaar-andmete tekstikodeering, mida kasutatakse baitide salvestamiseks tekstifailides või nende turvaliseks edastamiseks tekstina.
+  \item[BitTorrent] P2P-failijagamisprotokoll.
+  \item[CGNAT] Carrier-Grade NAT; internetiteenuse pakkuja poolt teostatav NAT, mille korral mitu klienti jagavad ühte avalikku IPv4-aadressi.
+  \item[CLI] Command-Line Interface (käsurealiides); tekstipõhine viis programmi käivitamiseks või seadistamiseks.
+  \item[Control plane] Juhtimistasand; koordineerimiskihistus, mis tegeleb autentimise, teenuste avastamise ja võrgu haldamisega.
+  \item[DDoS] Distributed Denial-of-Service; rünnak, mille eesmärk on teenus üle koormata suure hulga liiklusega mitmest allikast.
+  \item[Decentralization] Detsentraliseerimine; süsteemi ülesehitus, mis väldib sõltuvust ühest kesksest autoriteedist.
+  \item[DNS] Domain Name System; nimeteenus, mis teisendab hostinimed IP-aadressideks.
+  \item[Distributed Hash Table (DHT)] Detsentraliseeritud hajustabel, mis on jaotatud sõlmede vahel ning mida kasutatakse võtmete salvestamiseks ja leidmiseks ilma keskserverita.
+  \item[Dynamic DNS] Teenus, mis uuendab DNS-kirjeid automaatselt avaliku IP-aadressi muutumisel.
+  \item[Endpoint] Võrgusuhtluses osalev seade või sõlm.
+  \item[EndpointId] \texttt{iroh}-teegi identifikaator lõpp-punkti jaoks, mis tuletatakse lõpp-punkti avalikust võtmest.
+  \item[Encryption] Krüpteerimine; andmete teisendamine šifreeritud kujule, et volitamata osapooled ei saaks neid lugeda.
+  \item[Firewall] Tulemüür; turvasüsteem, mis filtreerib sissetulevat ja väljaminevat võrguliiklust vastavalt reeglitele.
+  \item[Git] Hajutatud versioonihaldussüsteem.
+  \item[Gossip protocol] P2P-sõnumiedastusmeetod, mille puhul infot levitatakse mitme sõlme kaudu edasi.
+  \item[HashMap] Võti-väärtus andmestruktuur, mis võimaldab kiiret otsingut võtme alusel.
+  \item[Iroh] P2P-võrguteek, mida kasutatakse lõplikus rakenduse arhitektuuris.
+  \item[IP] Internet Protocol; põhiprotokoll pakettide adresseerimiseks ja marsruutimiseks võrkudes.
+  \item[IPv4] Internet Protocol version 4; 32-bitine IP-aadressiskeem.
+  \item[IPv6] Internet Protocol version 6; 128-bitine IP-aadressiskeem.
+  \item[ISP] Internet Service Provider; ettevõte, mis pakub internetiühendust.
+  \item[Kademlia] Hajutatud otsinguprotokoll, mida kasutatakse paljudes DHT-põhistes süsteemides.
+  \item[L2] Layer 2; andmesidekiht, kus toimuvad Etherneti ja MAC-liiklusega seotud tegevused.
+  \item[L3] Layer 3; võrgukiht, kus marsruuditakse IP-pakette.
+  \item[Loopback] Kohalik liides, mis võimaldab arvutil iseendaga suhelda.
+  \item[Mainline DHT] BitTorrenti DHT-rakendus, mis põhineb Kademlia protokollil.
+  \item[Mesh VPN] VPN-arhitektuur, kus sõlmed ühenduvad omavahel otse võrgusilmana, mitte keskse vahendaja kaudu.
+  \item[MTU] Maximum Transmission Unit; suurim paketi suurus, mida võrk saab ilma fragmenteerimiseta edastada.
+  \item[Multicast] Andmeedastusmeetod, mille puhul üks pakett saadetakse samaaegselt mitmele vastuvõtjale.
+  \item[mDNS] Multicast DNS; kohaliku võrgu teenuste avastamise mehhanism, mis toimib nagu DNS ilma keskse DNS-serverita.
+  \item[NAT] Network Address Translation; mehhanism, mis võimaldab mitmel seadmel jagada ühte avalikku IP-aadressi.
+  \item[NAT hairpinning / NAT loopback] Ruuteri funktsioon, mis võimaldab sisevõrgu seadmetel jõuda hostini selle avaliku aadressi kaudu.
+  \item[NAT hole punching] Tehnika, mille abil luuakse NAT-kaardistused kahe sõlme otsese ühenduse võimaldamiseks.
+  \item[NAT traversal] Üldnimetus tehnikatele, mida kasutatakse pakettide edastamiseks läbi NAT-i ja tulemüüride teise sõlmeni.
+  \item[Open source] Avatud lähtekoodiga tarkvara, mille lähtekood on avalikult kättesaadav ja muudetav.
+  \item[Packet] Andmeüksus, mida edastatakse võrgus.
+  \item[Peer-to-peer (P2P)] Võrgumudel, kus seadmed suhtlevad omavahel otse.
+  \item[Plug-and-play] Lahendus, mis on loodud töötama minimaalse käsitsi seadistamisega.
+  \item[Path MTU Discovery] Meetod suurima paketi suuruse leidmiseks, mida saab marsruudil ilma fragmenteerimiseta edastada.
+  \item[Private key] Privaatvõti; salajane krüptograafiline võti, mida kasutatakse allkirjastamiseks, dekrüpteerimiseks või autentimiseks.
+  \item[Proprietary software] Omandvaraline tarkvara, mille lähtekood ei ole avalikult kättesaadav.
+  \item[Public key] Avalik võti; krüptograafiline võti, mida saab avalikult jagada krüpteerimiseks või identiteedi kontrollimiseks.
+  \item[QUIC] Kaasaegne UDP-l põhinev transpordiprotokoll, millel on sisseehitatud krüpteerimine ja multipleksimine.
+  \item[Radicle] Detsentraliseeritud koostööplatvorm Git-hoidlate jaoks.
+  \item[Radmin VPN] Omandvaraline VPN-rakendus, mida kasutatakse sageli mängimiseks ja kaugjuurdepääsuks.
+  \item[Relay server] Vahendusserver, mis edastab liiklust seadmete vahel.
+  \item[Rust] Süsteemiprogrammeerimiskeel, mis keskendub turvalisusele ja jõudlusele.
+  \item[Software Development Kit (SDK)] Tarkvaraarenduskomplekt; tarkvaraarenduse tööriistade kogum ühes installitavas paketis.
+  \item[SecretKey] \texttt{iroh}-teegi privaatvõtme tüüp, mida kasutatakse lõpp-punkti loomiseks või identifitseerimiseks.
+  \item[Service discovery] Mehhanism seadmete või teenuste automaatseks avastamiseks võrgus.
+  \item[SYN] TCP sünkroniseerimisbitt, mida kasutatakse ühenduse loomise algatamiseks.
+  \item[Socket] Võrgusuhtluseks kasutatav lõpp-punkt.
+  \item[SO\_REUSEPORT] Sokli seadistusvalik, mis võimaldab mitmel soklil kasutada sama kohalikku aadressi ja porti toetatud süsteemides.
+  \item[Tailnet] Privaatvõrk, mille loob ja haldab Tailscale.
+  \item[Tailscale] Mesh VPN teenus, mis ühendab seadmeid otse krüpteeritud tunnelite kaudu.
+  \item[TCP] Transmission Control Protocol; ühenduspõhine transpordiprotokoll.
+  \item[TCP hole punching] Tehnika, mille eesmärk on luua otsene TCP-ühendus läbi NAT-seadmete.
+  \item[Tokio] Rusti asünkroonne käituskeskkond.
+  \item[TOML] Tom's Obvious, Minimal Language; inimesele loetav konfiguratsioonifaili formaat.
+  \item[Tracker] Server, mis aitab BitTorrenti sõlmedel üksteist leida.
+  \item[TUN device / interface] Virtuaalne võrguliides, mis edastab IP-pakette kasutajaruumi kaudu.
+  \item[TAP] Virtuaalne võrguliides, mis edastab Etherneti kaadreid IP-pakettide asemel.
+  \item[UDP] User Datagram Protocol; kergekaaluline ühenduseta transpordiprotokoll.
+  \item[UDP hole punching] Tehnika otsese UDP-ühenduse loomiseks läbi NAT-seadmete.
+  \item[WireGuard] Kaasaegne VPN-protokoll ja rakendus, mis on tuntud lihtsuse ja kiiruse poolest.
+  \item[Yggdrasil] Detsentraliseeritud IPv6 mesh-võrgustiku projekt.
+  \item[Zeroconf] Zero-configuration networking; automaatne kohaliku võrgu avastamine ilma käsitsi seadistamiseta.
 \end{description}
 
-\emph{This list was generated with help of ChatGPT.}
+\emph{Käesolev loetelu on koostatud ChatGPT abiga.}
 
 \phantomsection
-\section*{Introduction}
-\addcontentsline{toc}{section}{Introduction}
+\section*{Sissejuhatus}
+\addcontentsline{toc}{section}{Sissejuhatus}
 
-When discussing methods for connecting to a self-hosted server at home, for example on the
-\href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit, \href{https://tailscale.com/}{Tailscale} is frequently recommended.
+Kui arutatakse meetodeid kodus majutatud serveriga ühenduse loomiseks, näiteks
+\href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} alamredditis, soovitatakse sageli kasutada \href{https://tailscale.com/}{Tailscale'i}.
 
-This recommendation is understandable, because connecting to a private home server is generally more complex than connecting to a publicly accessible server.
-In many home networks, devices are located behind NAT and assigned IPv4 addresses that may change periodically\footnote{This is partly due to IPv4 address exhaustion.},
-while firewalls often block incoming connections from outside the local network.
+See soovitus on mõistetav, kuna privaatse koduserveriga ühenduse loomine on üldjuhul keerulisem kui avalikult ligipääsetava serveriga ühenduse loomine.
+Paljudes koduvõrkudes paiknevad seadmed NAT-i taga ning neile määratakse IPv4-aadresse, mis võivad perioodiliselt muutuda\footnote{See on osaliselt tingitud IPv4-aadresside ammendumisest.},
+samal ajal kui tulemüürid blokeerivad sageli kohalikust võrgust väljaspoolt tulevaid ühendusi.
 
-In some cases, a public IPv4 address is not available at all, because an internet service provider may use
-\href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}. Under such conditions, external access to the network may remain unavailable
-even when \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS} is used and the relevant ports are forwarded on the router.
+Mõnel juhul ei ole avalik IPv4-aadress üldse saadaval, kuna internetiteenuse pakkuja võib kasutada
+\href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT-i}. Sellistes tingimustes võib väline ligipääs võrgule jääda kättesaamatuks
+isegi siis, kui kasutatakse \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS-i} ning ruuteris on vastavad pordid edasi suunatud.
 
-Tailscale addresses many of these limitations. When the Tailscale client is started, it connects to a
-\href{https://tailscale.com/docs/concepts/control-data-planes}{control plane} that manages the Tailscale network, known as a
-\href{https://tailscale.com/docs/concepts/tailnet}{tailnet}. The control plane maintains information about the devices in the network,
-including their internal addresses and public keys, manages access to each device, and assists with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal},
-which can enable direct connections to a server. Rather than using the traditional VPN model,
-in which traffic passes through a relay server to reach an internal subnet, Tailscale connects devices directly.
-This reduces the number of intermediaries and may lower latency and decrease dependence on a single relay point
-\footnote{A single point of failure still exists, since the tailnet is managed by the control plane rather than by a relay server.}.
-Because all clients in the network communicate directly with one another, this architecture is commonly described as a \href{https://en.wikipedia.org/wiki/Mesh_networking}{mesh VPN}.
+Tailscale lahendab paljusid neist piirangutest. Kui Tailscale'i klient käivitatakse, ühendub see
+\href{https://tailscale.com/docs/concepts/control-data-planes}{juhttasandiga} (control plane), mis haldab Tailscale'i võrku ehk
+\href{https://tailscale.com/docs/concepts/tailnet}{tailnet-i}. Juhttasand säilitab teavet võrgus olevate seadmete kohta,
+sealhulgas nende sisemised aadressid ja avalikud võtmed, haldab ligipääsu igale seadmele ning aitab kaasa
+\href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal}-i toimimisele,
+mis võib võimaldada otsese ühenduse loomist serveriga. Traditsioonilise VPN-mudeli asemel,
+kus liiklus läbib sisemise alamvõrguni jõudmiseks vahendusserveri, ühendab Tailscale seadmed otse.
+See vähendab vahendajate arvu ning võib vähendada latentsust ja sõltuvust ühest vahenduspunktist
+\footnote{Üks tõrkepunkt jääb siiski alles, kuna tailnet-i haldab juhttasand, mitte vahendusserver.}.
+Kuna kõik võrgus olevad kliendid suhtlevad omavahel otse, kirjeldatakse sellist arhitektuuri sageli kui \href{https://en.wikipedia.org/wiki/Mesh_networking}{mesh VPN}-i.
 
-In practice, Tailscale allows a device to join a tailnet and then access other devices through their assigned addresses.
-This reduces the need to configure peers on each device, open ports, or manually manage routing.
+Praktikas võimaldab Tailscale seadmel liituda tailnet-iga ning seejärel pääseda ligi teistele seadmetele nende määratud aadresside kaudu.
+See vähendab vajadust seadistada igas seadmes peers'e, avada porte või hallata marsruutimist käsitsi.
 
-The same approach can also be useful for multiplayer gaming with friends.
-However, a simpler alternative in this context is \href{https://www.radmin-vpn.com/}{Radmin VPN}, which provides similar functionality.
-Since it is proprietary software, users cannot independently verify how it operates or determine whether it contains malicious code.
+Sama lähenemine võib olla kasulik ka sõpradega mitmikmängude mängimisel.
+Selles kontekstis on siiski lihtsamaks alternatiiviks \href{https://www.radmin-vpn.com/}{Radmin VPN}, mis pakub sarnast funktsionaalsust.
+Kuna tegemist on proprietaarse tarkvaraga, ei saa kasutajad iseseisvalt kontrollida selle toimimist ega määrata, kas see sisaldab pahatahtlikku koodi.
 
-Motivated by an interest in the internal design of Tailscale, this project aims to develop a VPN solution, identify implementation issues through practical experience,
-and potentially create a tool for gamers to use for online play. Even if the project does not reach full completion, it is expected to provide substantial practical learning value.
+Huvi tõttu Tailscale'i sisemise arhitektuuri vastu on käesoleva projekti eesmärgiks arendada VPN-lahendus, tuvastada praktilise kogemuse kaudu rakendamisega seotud probleeme
+ning potentsiaalselt luua tööriist, mida mängurid saaksid kasutada võrgumängude mängimiseks. Isegi kui projekt ei jõua täieliku valmimiseni, eeldatakse, et see pakub märkimisväärset praktilist õpiväärtust.
 
-\emph{ChatGPT was used to translate this document from English to Estonian. The original text was written entirely in English.}
+\emph{Käesoleva dokumendi tõlkimisel inglise keelest eesti keelde kasutati ChatGPT-d. Originaaltekst oli täielikult kirjutatud inglise keeles.}
 
-\section{Researching existing solutions} \label{existingsolutions}
+\section{Olemasolevate lahenduste uurimine} \label{existingsolutions}
 
-An interest in \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self-hosting}
-various services on personal servers motivated an emphasis on maintaining control over personal data
-and reducing reliance on third-party infrastructure.
-For this reason, solutions such as Tailscale and Radmin VPN were considered unsuitable in certain aspects:
+Huvi \href{https://en.wikipedia.org/wiki/Self-hosting_(network)}{self-hosting}-u vastu,
+ehk erinevate teenuste majutamine isiklikes serverites, motiveeris keskenduma kontrolli säilitamisele isiklike andmete üle
+ning sõltuvuse vähendamisele kolmandate osapoolte infrastruktuurist.
+Sel põhjusel peeti lahendusi nagu Tailscale ja Radmin VPN teatud aspektides ebasobivaks:
 \begin{itemize}
-  \item Radmin VPN is fully proprietary, meaning that both the server-side and client-side components
-        are controlled by the vendor. As a result, users have limited ability to verify the behavior
-        of the software or audit its security guarantees.
-  \item Tailscale provides an open-source client implementation; however, its control plane remains proprietary
-        and governs client coordination and network management. Consequently, compromise of the control infrastructure
-        could potentially expose connected devices unless additional security measures, such as firewall configuration,
-        are applied. Nevertheless, Tailscale represents a practical balance between usability and security.
+  \item Radmin VPN on täielikult proprietaarne, mis tähendab, et nii serveri- kui ka kliendipoolsed komponendid
+        on tarnija kontrolli all. Selle tulemusena on kasutajatel piiratud võimalused tarkvara käitumise kontrollimiseks
+        või selle turvalisuse auditeerimiseks.
+  \item Tailscale pakub avatud lähtekoodiga kliendirakendust, kuid selle juhttasand jääb proprietaarseks
+        ning vastutab klientide koordineerimise ja võrgu haldamise eest. Sellest tulenevalt võib juhtinfrastruktuuri kompromiteerimine
+        potentsiaalselt paljastada ühendatud seadmed, kui ei rakendata täiendavaid turvameetmeid, näiteks tulemüüri seadistamist.
+        Sellegipoolest kujutab Tailscale endast praktilist tasakaalu kasutusmugavuse ja turvalisuse vahel.
 \end{itemize}
 
-Projects such as \href{https://syncthing.net/}{Syncthing} and \href{https://yggdrasil-network.github.io/}{Yggdrasil}
-demonstrate alternative decentralized approaches in which each device independently determines trust relationships
-without relying on a centralized authority responsible for connection management.
+Projektid nagu \href{https://syncthing.net/}{Syncthing} ja \href{https://yggdrasil-network.github.io/}{Yggdrasil}
+demonstreerivad alternatiivseid detsentraliseeritud lähenemisi, mille puhul iga seade määrab usaldussuhted iseseisvalt,
+ilma ühenduste haldamise eest vastutava keskse autoriteedita.
 
-In particular, the networking model used by Yggdrasil was of significant interest.
-Within this architecture, each client simultaneously functions as a server, while an IPv6 address also represents
-the node's public key.
-This design enables packets to be encrypted directly using the destination address, ensuring that only the node
-possessing the corresponding private key can decrypt the transmitted data.
-As a result, communication confidentiality can be maintained without dependence on a centralized authority,
-while intermediate peers merely relay encrypted traffic toward the intended recipient.
+Eelkõige pakkus märkimisväärset huvi Yggdrasil-i kasutatav võrgumudel.
+Selles arhitektuuris toimib iga klient samaaegselt serverina, samal ajal kui IPv6-aadress esindab ka sõlme avalikku võtit.
+Selline disain võimaldab pakette krüpteerida otse sihtaadressi abil, tagades, et edastatud andmeid saab dekrüpteerida ainult vastavat privaatvõtit omav sõlm.
+Selle tulemusena on võimalik säilitada side konfidentsiaalsus ilma keskse autoriteedi sõltuvuseta,
+samal ajal kui vahepealsed peers-id edastavad üksnes krüpteeritud liiklust sihtsaaja suunas.
 
-However, fully decentralized systems introduce the challenge of peer discovery.
-Without a central coordination server, nodes require alternative methods for locating peers on the Internet.
-Historically, \href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent}
-relied on \href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}
-to identify peers participating in a particular file-sharing session.
-This approach created a dependency on centralized infrastructure despite the distributed nature of the protocol itself.
-\footnote{The use of multiple trackers can improve resilience, although the architecture still retains partially centralized characteristics.}
+Täielikult detsentraliseeritud süsteemid toovad siiski kaasa peers-ide avastamise probleemi.
+Ilma keskse koordineeriva serverita vajavad sõlmed alternatiivseid meetodeid teiste peers-ide leidmiseks Internetis.
+Ajalooliselt kasutas \href{https://en.wikipedia.org/wiki/BitTorrent}{BitTorrent}
+\href{https://en.wikipedia.org/wiki/BitTorrent_tracker}{trackers}-eid,
+et tuvastada konkreetses failijagamisseansis osalevaid peers-e.
+Selline lähenemine lõi sõltuvuse tsentraliseeritud infrastruktuurist hoolimata protokolli hajutatud olemusest.
+\footnote{Mitme tracker-i kasutamine võib parandada töökindlust, kuigi arhitektuur säilitab siiski osaliselt tsentraliseeritud omadused.}
 
-To address this limitation, modern
-\href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrent clients}
-commonly employ a \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-based
-\href{https://en.wikipedia.org/wiki/Distributed_hash_table}{distributed hash table},
-referred to as \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}.
-In this model, each peer participates in a distributed tracking infrastructure,
-eliminating dependence on a single centralized server for peer discovery.
-Consequently, peer discovery remains functional even if all dedicated trackers become unavailable.
-A detailed explanation of this mechanism is provided in the video
+Selle piirangu lahendamiseks kasutavad kaasaegsed
+\href{https://en.wikipedia.org/wiki/Comparison_of_BitTorrent_clients}{BitTorrenti kliendid}
+laialdaselt \href{https://en.wikipedia.org/wiki/Kademlia}{Kademlia}-põhist
+\href{https://en.wikipedia.org/wiki/Distributed_hash_table}{hajustatud räsitabelit},
+mida nimetatakse \href{https://en.wikipedia.org/wiki/Mainline_DHT}{Mainline DHT}-ks.
+Selles mudelis osaleb iga peer hajutatud jälgimistaristus,
+välistades sõltuvuse ühest tsentraliseeritud serverist peers-ide avastamiseks.
+Sellest tulenevalt jääb peers-ide avastamine toimivaks isegi juhul, kui kõik spetsiaalsed tracker-id muutuvad kättesaamatuks.
+Selle mehhanismi üksikasjalik selgitus on esitatud videos
 \href{https://www.youtube.com/watch?v=1QdKhNpsj8M}{Kademlia, Explained}.
 
-Another relevant project is \href{https://radicle.xyz/}{Radicle},
-which applies peer-to-peer networking principles to
-\href{https://en.wikipedia.org/wiki/Git}{Git version control}.
-Although Git itself is inherently distributed, collaboration is frequently facilitated through centralized
-\href{https://en.wikipedia.org/wiki/Forge_(software)}{forge platforms}
-such as \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
-Radicle introduces its own protocol, named
+Teine asjakohane projekt on \href{https://radicle.xyz/}{Radicle},
+mis rakendab peer-to-peer võrgunduse põhimõtteid
+\href{https://en.wikipedia.org/wiki/Git}{Git versioonihaldusele}.
+Kuigi Git ise on olemuselt hajutatud, toimub koostöö sageli tsentraliseeritud
+\href{https://en.wikipedia.org/wiki/Forge_(software)}{forge-platvormide}
+kaudu, näiteks \href{https://github.com/}{GitHub} ja \href{https://about.gitlab.com/}{GitLab}.
+Radicle tutvustab oma protokolli nimega
 \href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood},
-which utilizes a \href{https://radicle.xyz/guides/protocol}{gossip protocol}
-for peer and repository discovery.
+mis kasutab peers-ide ja repositooriumide avastamiseks \href{https://radicle.xyz/guides/protocol}{gossip-protokolli}.
 
 \newpage
 
-For example, consider the following peer topology:
+Näiteks vaadelgem järgmist peers-ide topoloogiat:
 
 \begin{figure}[H]
   $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
-  \caption{A diagram illustrating connections between peers}
+  \caption{Diagramm, mis illustreerib ühendusi peers-ide vahel}
 \end{figure}
 
-Suppose peer A intends to communicate with peer D but does not possess its network address.
-Peer A propagates a gossip request to peer B, which forwards the request to peer C, and eventually to peer D.
-Responses are then routed back through the network.
-While this example demonstrates linear propagation, practical implementations distribute requests simultaneously
-through multiple peers across the network.
-To prevent excessive propagation and denial-of-service amplification, each peer stores identifiers of previously processed requests
-and ignores duplicates.
-This mechanism enables communication and information exchange even in the absence of direct connectivity between peers.
+Oletame, et peer A soovib suhelda peer D-ga, kuid ei oma selle võrguaadressi.
+Peer A levitab gossip-päringu peer B-le, kes edastab päringu peer C-le ning lõpuks peer D-le.
+Vastused suunatakse seejärel võrgu kaudu tagasi.
+Kuigi antud näide demonstreerib lineaarset levikut, jaotavad praktilised rakendused päringud samaaegselt
+mitme peer-i kaudu üle kogu võrgu.
+Liigse leviku ja teenusetõkestusrünnakute võimendamise vältimiseks salvestab iga peer eelnevalt töödeldud päringute identifikaatorid
+ning ignoreerib duplikaate.
+See mehhanism võimaldab suhtlust ja teabevahetust isegi juhul, kui peers-ide vahel puudub otsene ühendus.
 
-Additional investigation into peer-to-peer networking technologies led to the discovery of
-\href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{iroh},
-a networking library implemented in \href{https://rust-lang.org/}{Rust}.
-The library provides abstractions for establishing peer-to-peer communication with minimal configuration complexity.
-Preliminary evaluation indicated that the library satisfies many of the requirements identified for decentralized networking systems
-and may therefore be suitable for future projects involving peer-to-peer communication.
+Täiendav uurimine peer-to-peer võrgundustehnoloogiate valdkonnas viis
+\href{https://www.youtube.com/watch?v=RwAt36Xe3UI}{iroh}-i avastamiseni,
+mis on \href{https://rust-lang.org/}{Rust}-is implementeeritud võrguteek.
+Teek pakub abstraktsioone peer-to-peer suhtluse loomiseks minimaalse seadistuskeerukusega.
+Esialgne hinnang näitas, et teek vastab paljudele detsentraliseeritud võrgusüsteemidele seatud nõuetele
+ning võib seetõttu sobida tulevasteks projektideks, mis hõlmavad peer-to-peer suhtlust.
 
-\section{Planning} \label{planning}
+\section{Planeerimine} \label{planning}
 
-At the current stage of the project, the development of a fully original protocol is not considered feasible due to the significant amount of research and implementation effort required.
-Instead, the implementation will be based on existing transport protocols and networking techniques.
+Projekti praeguses etapis ei peeta täielikult originaalse protokolli väljatöötamist teostatavaks, kuna see nõuaks märkimisväärses mahus uurimis- ja arendustööd.
+Selle asemel põhineb implementatsioon olemasolevatel transpordiprotokollidel ja võrgundustehnikatel.
 
-UDP is considered as the primary transport protocol because it simplifies the implementation of
-\href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching}.
-However, the use of UDP also requires additional mechanisms for
-\href{https://www.reddit.com/r/networking/comments/a8c42z/}{reliable delivery}
-and
-\href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{congestion and rate control}.
-Implementing these mechanisms from scratch is outside the scope of the available development time for the diploma project.
+UDP-d käsitletakse peamise transpordiprotokollina, kuna see lihtsustab
+\href{https://en.wikipedia.org/wiki/UDP_hole_punching}{NAT hole punching}'u implementatsiooni.
+Samas nõuab UDP kasutamine täiendavate mehhanismide rakendamist
+\href{https://www.reddit.com/r/networking/comments/a8c42z/}{usaldusväärseks andmeedastuseks}
+ning
+\href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{koormus- ja kiiruse juhtimiseks}.
+Nende mehhanismide nullist implementeerimine jääb diplomitöö jaoks olemasoleva arendusaja ulatusest välja.
 
-\subsection{Core functionality} \label{corefunctionality}
+\subsection{Põhifunktsionaalsus} \label{corefunctionality}
 
-During the initial launch of the application, a cryptographic key pair is generated.
-The public key serves as the identifier of a peer.
-To establish a connection, each peer provides the identifier of the other peer, after which peer discovery and connection establishment are performed automatically.
-Manual specification of network endpoints is therefore unnecessary, similarly to the approach used in iroh.
+Rakenduse esmasel käivitamisel genereeritakse krüptograafiline võtmepaar.
+Avalik võti toimib sõlme identifikaatorina.
+Ühenduse loomiseks sisestab kumbki sõlm teise sõlme identifikaatori, mille järel viiakse sõlmede avastamine ja ühenduse loomine läbi automaatselt.
+Seetõttu ei ole võrgulõpp-punktide käsitsi määramine vajalik, sarnaselt iroh-i kasutatavale lähenemisele.
 
-IP addresses are derived cryptographically from the peer identity unless explicitly specified in the configuration.
+IP-aadressid tuletatakse krüptograafiliselt sõlme identiteedist, välja arvatud juhul, kui need on konfiguratsioonis selgesõnaliselt määratud.
 
-Connection failures are handled automatically in the background.
-If a connection attempt fails, repeated reconnection attempts are performed until connectivity is restored.
-The implementation is also intended to support network changes.
-For example, if the IP address of a peer changes, packets should subsequently be transmitted to the updated destination address, similarly to the behavior of WireGuard.
+Ühenduse tõrkeid käsitletakse automaatselt taustal.
+Kui ühenduse loomise katse ebaõnnestub, tehakse korduvaid taasühendamise katseid kuni ühenduvuse taastumiseni.
+Implementatsioon on kavandatud toetama ka võrgu muutusi.
+Näiteks juhul, kui sõlme IP-aadress muutub, tuleb paketid edaspidi edastada uuendatud sihtaadressile, sarnaselt WireGuardi käitumisele.
 
-\subsection{Core choices}
+\subsection{Põhilised tehnoloogilised valikud}
 
-Rust was selected as the implementation language because it is also used by iroh, which is planned to be integrated into the final application.
+Rust valiti implementatsioonikeeleks, kuna seda kasutatakse ka iroh-is, mille integreerimine lõplikku rakendusse on kavandatud.
 
-The networking stack is planned to initially use UDP, followed by QUIC.
-Starting with UDP provides a lower-level foundation for understanding and implementing the required networking functionality.
-Additionally, TCP-based NAT hole punching will be investigated to evaluate its feasibility within the project context.
+Võrgupinu puhul on esialgu plaanis kasutada UDP-d ning seejärel QUIC-it.
+UDP-ga alustamine võimaldab madalama taseme baasi vajaliku võrgufunktsionaalsuse mõistmiseks ja implementeerimiseks.
+Lisaks uuritakse TCP-põhist NAT hole punching'ut, et hinnata selle teostatavust projekti kontekstis.
 
-For asymmetric cryptography,
-\href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{Ed25519}
-was selected due to its widespread adoption in systems such as SSH, WireGuard, and iroh.
-For symmetric encryption,
-\href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20}
-was selected based on its performance characteristics and broad practical adoption.
-For hashing functions,
+Asümmeetrilise krüptograafia jaoks valiti
+\href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{Ed25519},
+kuna seda kasutatakse laialdaselt sellistes süsteemides nagu SSH, WireGuard ja iroh.
+Sümmeetrilise krüpteerimise jaoks valiti
+\href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20},
+lähtudes selle jõudlusomadustest ja laialdasest praktilisest kasutusest.
+Räsifunktsioonide jaoks peetakse implementatsiooni seisukohalt sobivateks valikuteks
 \href{https://en.wikipedia.org/wiki/BLAKE_(hash_function)}{BLAKE3}
-and
-\href{https://en.wikipedia.org/wiki/SHA-2}{SHA-2}
-are considered suitable choices for the implementation.
+ja
+\href{https://en.wikipedia.org/wiki/SHA-2}{SHA-2}.
 
+\section{Lihtne UDP server/klient}
 
-\section{Simple UDP server/client}
-
-As an initial step, the \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation for UDP sockets} was reviewed, and the following implementation was developed:
+Esialgse sammuna tutvuti \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust-i UDP socket'ite dokumentatsiooniga}, mille põhjal töötati välja järgmine implementatsioon:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -461,175 +451,178 @@ fn client() {
     );
 }
   \end{minted}
-  \caption{Example implementation of a UDP-based server and client}
+  \caption{UDP-põhise serveri ja kliendi implementatsiooni näide}
 \end{figure}
 
-\newpage
-
-After executing both the server and the client applications, the following output was obtained:
+Pärast serveri- ja kliendirakenduste käivitamist saadi järgmine väljund:
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{1/server.png}
-  \caption{Server output showing a message received from the client}
+  \caption{Serveri väljund, mis kuvab kliendilt vastu võetud sõnumi}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{1/client.png}
-  \caption{Client output showing the reversed message received from the server}
+  \caption{Kliendi väljund, mis kuvab serverilt saadud pööratud sõnumi}
 \end{figure}
 
-The results demonstrate successful communication between the client and the server.
-The client transmitted a message to the server, after which the server processed the received data by
-reversing its contents and returning the modified message to the client.
+Tulemused demonstreerivad edukat suhtlust kliendi ja serveri vahel.
+Klient edastas serverile sõnumi, mille järel server töötles vastuvõetud andmeid,
+pöörates nende sisu ümber ning saates muudetud sõnumi kliendile tagasi.
 
-The next step is to investigate service discovery mechanisms.
+Järgmise sammuna uuritakse teenuse avastamise mehhanisme.
 
-\section{Peer discovery}
+\section{Sõlmede avastamine}
 
-After establishing UDP-based communication, it becomes necessary to replace direct IP addressing with node identifiers.
-To achieve this, a discovery server is required to associate node identifiers with their corresponding IP addresses.
+Pärast UDP-põhise suhtluse loomist muutub vajalikuks otsese IP-aadressimise asendamine sõlmede identifikaatoritega.
+Selle saavutamiseks on vajalik avastusserver, mis seob sõlmede identifikaatorid neile vastavate IP-aadressidega.
 
-\subsection{Discovery server}
+\subsection{Avastusserver}
 
-The implemented discovery server uses the same UDP-based protocol,
-where messages are represented as plain text strings in the following format:
+Implementeeritud avastusserver kasutab sama UDP-põhist protokolli,
+kus sõnumid on esitatud lihttekstis stringidena järgmises formaadis:
 \texttt{command|arguments}.
 
-When the discovery server receives a command, it also obtains the source address of the sender.
-Consequently, after receiving the command \texttt{register|node id}, the server can associate the node identifier with the sender's address, for example:
+Kui avastusserver võtab vastu käsu, saab ta ühtlasi teada saatja lähteaadressi.
+Sellest tulenevalt saab server pärast käsu \texttt{register|node id} vastuvõtmist seostada sõlme identifikaatori saatja aadressiga, näiteks:
 \mintinline{js}|nodes["node id"] = "source address"|
-using a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
+kasutades \href{https://en.wikipedia.org/wiki/Hash_table}{paisktabelit}.
 
-\subsection{A node/peer}
+\subsection{Sõlm / peer}
 
-Each node registers itself with the discovery server and subsequently requests
-the address associated with the target node identifier.
-This process is executed continuously in a loop, allowing the node to repeatedly
-register itself, retrieve the target address, and transmit messages to the target node.
+Iga sõlm registreerib ennast avastusserveris ning seejärel küsib
+sihtsõlme identifikaatoriga seotud aadressi.
+Seda protsessi teostatakse pidevalt tsüklis, võimaldades sõlmel korduvalt
+ennast registreerida, sihtaadressi hankida ning edastada sõnumeid sihtsõlmele.
 
-\subsection{Result}
+\subsection{Tulemus}
 
-The source code is not included in this document.
-However, the implementation of the discovery server can be found in commit
+Lähtekoodi käesolevas dokumendis ei esitata.
+Küll aga on avastusserveri implementatsioon leitav commit'is
 \href{https://github.com/dankmolot/petope/tree/5a66b32a015f395bc614a1aedc54a87a44d8dbc1}{5a66b3}.
 
-At the current stage, the discovery mechanism relies on a plain-text UDP protocol,
-which allows it to be tested using the \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
+Praeguses etapis põhineb avastusmehhanism lihttekstisel UDP-protokollil,
+mis võimaldab seda testida \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminaliutiliidi abil:
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{2/netcat_discovery_example.png}
-  \caption{Sending commands using the netcat utility}
+  \caption{Käskude saatmine netcat utiliidi abil}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{2/discovery_server_logs.png}
-  \caption{Discovery server log output}
+  \caption{Avastusserveri logiväljund}
 \end{figure}
 
-After starting both nodes, the peers establish communication automatically.
+Pärast mõlema sõlme käivitamist loovad peer-id ühenduse automaatselt.
 
 \begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_alpha.png}
-  \caption{Node \texttt{alpha} receiving a connection request from node \texttt{beta}}
+  \caption{Sõlm \texttt{alpha} võtab vastu ühenduspäringu sõlmelt \texttt{beta}}
 \end{figure}
 
 \begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_beta.png}
-  \caption{Node \texttt{beta} initiating a connection with node \texttt{alpha}}
+  \caption{Sõlm \texttt{beta} algatab ühenduse sõlmega \texttt{alpha}}
 \end{figure}
 
-The results demonstrate that node \texttt{beta} successfully reached node \texttt{alpha},
-and node \texttt{alpha} responded accordingly.
-Both nodes resolved each other's network addresses exclusively through the identifiers
-\texttt{alpha} and \texttt{beta}.
+Tulemused demonstreerivad, et sõlm \texttt{beta} saavutas edukalt ühenduse sõlmega \texttt{alpha},
+ning sõlm \texttt{alpha} vastas sellele vastavalt.
+Mõlemad sõlmed lahendasid teineteise võrguaadressid üksnes identifikaatorite
+\texttt{alpha} ja \texttt{beta} abil.
 
-Since the current implementation continuously attempts to discover and connect to peer nodes,
-it provides the necessary foundation for UDP hole punching.
+Kuna praegune implementatsioon proovib pidevalt peer-sõlmi avastada ja nendega ühendust luua,
+tagab see vajaliku aluse UDP hole punching'u realiseerimiseks.
 
 \section{UDP hole punching}
 
-To evaluate UDP hole punching functionality, a dedicated public server was used to host a
-\emph{discovery} service, while two nodes were deployed on separate networks.
+UDP hole punching funktsionaalsuse hindamiseks kasutati eraldiseisvat avalikku serverit
+\emph{discovery}-teenuse majutamiseks, samal ajal kui kaks sõlme paigutati erinevatesse võrkudesse.
 
-The first node was executed on a notebook computer connected to a residential home network.
-The second node was executed on a mobile phone with \href{https://termux.dev/en/}{Termux} installed
-and connected to the Telia mobile network.
-The discovery server was hosted on a rented virtual private server
-provided by \href{https://www.hetzner.com/}{Hetzner}, configured with a static public IPv4 address.
+Esimene sõlm käivitati sülearvutis, mis oli ühendatud kodusesse elamuvõrku.
+Teine sõlm käivitati mobiiltelefonis, kuhu oli paigaldatud \href{https://termux.dev/en/}{Termux}
+ning mis oli ühendatud Telia mobiilsidevõrku.
+Discovery-server majutati renditud virtuaalses privaatserveris,
+mida pakkus \href{https://www.hetzner.com/}{Hetzner} ning mis oli seadistatud staatilise avaliku IPv4-aadressiga.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{3/node_on_a_pc.png}
-  \caption{Successful reply transmitted from the phone to the notebook}
+  \caption{Telefonist sülearvutisse saadetud edukas vastus}
   \label{fig:udp_punch_pc}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{3/node_on_a_phone.png}
-  \caption{Successful incoming message transmitted from the notebook to the phone}
+  \caption{Sülearvutist telefoni saadetud edukalt vastuvõetud sõnum}
   \label{fig:udp_punch_phone}
 \end{figure}
 
-Figures \ref{fig:udp_punch_pc} and \ref{fig:udp_punch_phone} illustrate successful communication
-between the two nodes through the discovery server located at address \emph{91.107.213.38}
-\footnote{Public IPv4 address of the rented virtual server}.
-The notebook used the public address \emph{88.196.179.131},
-while the phone used the public address \emph{46.131.76.184}.
+Joonised \ref{fig:udp_punch_pc} ja \ref{fig:udp_punch_phone} illustreerivad edukat suhtlust
+kahe sõlme vahel discovery-serveri kaudu, mis asus aadressil \emph{91.107.213.38}
+\footnote{Renditud virtuaalserveri avalik IPv4-aadress}.
+Sülearvuti kasutas avalikku aadressi \emph{88.196.179.131},
+samal ajal kui telefon kasutas avalikku aadressi \emph{46.131.76.184}.
 
-Both nodes first registered their public endpoint information with the discovery server
-and subsequently retrieved the endpoint information of the remote peer.
-After each node transmitted an initial UDP packet to the other, the corresponding NAT devices permitted
-incoming traffic associated with the established mappings. As a result, the phone successfully received a message
-from the notebook, after which the notebook received a reply from the phone.
+Mõlemad sõlmed registreerisid esmalt discovery-serveris oma avaliku lõpp-punkti informatsiooni
+ning seejärel pärisid kaugema partneri lõpp-punkti informatsiooni.
+Pärast seda, kui kumbki sõlm saatis teisele esialgse UDP-paketi, võimaldasid vastavad NAT-seadmed
+sissetulevat liiklust, mis oli seotud loodud vastendustega. Selle tulemusel sai telefon edukalt vastu võtta sõnumi
+sülearvutilt, mille järel sai sülearvuti vastuse telefonilt.
 
 \newpage
 
-\subsection{Observed limitations}
+\subsection{Täheldatud piirangud}
 
-Initial experiments were conducted with both nodes connected to the same residential Wi-Fi network.
-Under these conditions, incoming packets were not successfully delivered between the nodes.
-This behavior is likely related to router-specific NAT handling or limitations in local packet forwarding mechanisms.
-Consequently, alternative peer discovery and communication mechanisms are required for nodes operating within the same local network.
+Esialgsed katsed viidi läbi olukorras, kus mõlemad sõlmed olid ühendatud samasse kodusesse Wi-Fi võrku.
+Nendes tingimustes ei jõudnud sissetulevad paketid sõlmede vahel edukalt kohale.
+Selline käitumine on tõenäoliselt seotud ruuterispetsiifilise NAT-käsitluse või kohalike pakettide edastamise mehhanismide piirangutega.
+Sellest tulenevalt on samas lokaalses võrgus töötavate sõlmede jaoks vajalikud alternatiivsed partnerite avastamise ja suhtluse mehhanismid.
 
-One possible solution is the use of \href{https://en.wikipedia.org/wiki/Zero-configuration_networking}{Zeroconf} technologies,
-which enable automatic service advertisement and discovery within local networks.
-Such mechanisms allow nodes located in the same network to establish communication without relying on an external discovery server.
+Ühe võimaliku lahendusena võib kasutada \href{https://en.wikipedia.org/wiki/Zero-configuration_networking}{Zeroconf}-tehnoloogiaid,
+mis võimaldavad teenuste automaatset reklaamimist ja avastamist lokaalsetes võrkudes.
+Sellised mehhanismid võimaldavad samas võrgus paiknevatel sõlmedel luua ühenduse ilma välise discovery-serverita.
 
-The \href{https://docs.iroh.computer/connecting/local-discovery}{Iroh} framework, for example, implements an mDNS-like local discovery mechanism that can be enabled when required.
+Näiteks \href{https://docs.iroh.computer/connecting/local-discovery}{Iroh}-raamistik rakendab mDNS-laadset lokaalset avastamismehhanismi,
+mida saab vajaduse korral aktiveerida.
 
-Another potential limitation arises when both nodes are located in different networks but operate behind the same CGNAT infrastructure
-\footnote{Devices share the same public IPv4 address while maintaining different internal private addresses}.
-In this scenario, the discovery server cannot determine the internal addresses assigned within the CGNAT environment, which may prevent successful peer-to-peer connectivity.
+Teine võimalik piirang tekib olukorras, kus mõlemad sõlmed paiknevad erinevates võrkudes,
+kuid töötavad sama CGNAT-infrastruktuuri taga
+\footnote{Seadmed jagavad sama avalikku IPv4-aadressi, säilitades samal ajal erinevad sisemised privaat-aadressid}.
+Sellisel juhul ei suuda discovery-server määrata CGNAT-keskkonnas kasutatavaid sisemisi aadresse,
+mis võib takistada edukat peer-to-peer ühenduse loomist.
 
 \section{TCP hole punching}
 
-\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} operates similarly to UDP hole punching.
-In principle, it is sufficient for both peers to send a \texttt{SYN} packet to each other's network addresses,
-after which subsequent packets may traverse the NAT device successfully.
+\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} töötab sarnaselt UDP hole punching mehhanismiga.
+Põhimõtteliselt piisab sellest, kui mõlemad partnerid saadavad teineteise võrguaadressidele \texttt{SYN}-paketi,
+mille järel võivad järgnevad paketid NAT-seadet edukalt läbida.
 
-The primary challenge lies in implementing this behavior programmatically.
-Most standard networking libraries support TCP sockets operating either in \emph{connect} mode or \emph{listen} mode,
-while the \emph{connect} mode typically permits communication with only a single remote endpoint.
+Peamine väljakutse seisneb sellise käitumise programmilises realiseerimises.
+Enamik standardseid võrguteeke toetab TCP-pesasid, mis töötavad kas \emph{connect}-režiimis või \emph{listen}-režiimis,
+kusjuures \emph{connect}-režiim võimaldab tavaliselt suhtlust ainult ühe kaugema lõpp-punktiga.
 
-The \href{https://crates.io/crates/socket2}{socket2} Rust library provides access to operating system specific APIs
-that allow TCP sockets to be reused across multiple destination addresses while preserving the same local port configuration.
-This functionality can be employed to experimentally evaluate TCP hole punching behavior.
+Rusti teek \href{https://crates.io/crates/socket2}{socket2} võimaldab ligipääsu operatsioonisüsteemispetsiifilistele API-dele,
+mis võimaldavad TCP-pesasid taaskasutada mitme sihtaadressi jaoks, säilitades sama lokaalse pordi konfiguratsiooni.
+Seda funktsionaalsust saab kasutada TCP hole punching käitumise eksperimentaalseks hindamiseks.
 
-\subsection{Reusing the same socket}
+\subsection{Sama pesa taaskasutamine}
 
-Attempting to create multiple \href{https://en.wikipedia.org/wiki/Network_socket}{sockets} bound to the same local address
-normally results in an ``Address already in use'' error. Modern operating systems commonly provide the \texttt{SO\_REUSEPORT} socket option,
-which allows multiple sockets to share the same local address and port combination.
+Katse luua mitu sama lokaalse aadressiga seotud \href{https://en.wikipedia.org/wiki/Network_socket}{pesa}
+lõppeb tavaliselt veaga ``Address already in use''.
+Kaasaegsed operatsioonisüsteemid pakuvad üldjuhul \texttt{SO\_REUSEPORT} pesaoptsiooni,
+mis võimaldab mitmel pesal jagada sama lokaalse aadressi ja pordi kombinatsiooni.
 
-Using this mechanism, a node may first establish a connection to a discovery server in order to obtain a local address assignment.
-Subsequently, additional sockets may reuse the same local address and port when attempting peer-to-peer communication.
+Selle mehhanismi abil võib sõlm esmalt luua ühenduse discovery-serveriga,
+et operatsioonisüsteem määraks talle lokaalse aadressi.
+Seejärel võivad täiendavad pesad kasutada sama lokaalset aadressi ja porti peer-to-peer ühenduste loomisel.
 
-An example implementation using the \href{https://crates.io/crates/socket2}{socket2} library is shown below:
+Allpool on toodud näidisimplementatsioon, mis kasutab teeki \href{https://crates.io/crates/socket2}{socket2}:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -657,110 +650,115 @@ fn main() {
     second_socket.listen(128).unwrap(); // run socket in listen mode
 }
   \end{minted}
-  \caption{Example usage of the \texttt{socket2} library for creating reusable sockets}
+  \caption{Näide teegi \texttt{socket2} kasutamisest taaskasutatavate pesade loomiseks}
 \end{figure}
 
-Without the \mintinline{rust}|Socket::set_reuse_port(true)| call, the example fails with an ``Address already in use'' error.
-This behavior can be reproduced by replacing \texttt{true} with \texttt{false}.
+Ilma väljakutseta \mintinline{rust}|Socket::set_reuse_port(true)| lõpeb näide veaga ``Address already in use''.
+Sellist käitumist on võimalik reprodutseerida, asendades väärtuse \texttt{true} väärtusega \texttt{false}.
 
-\subsection{First attempt}
+\subsection{Esimene katse}
 
-Migrating the discovery server implementation from UDP to TCP required relatively minor modifications.
-In particular, a dedicated thread was introduced for each incoming connection in order to prevent premature socket termination.
+Discovery-serveri implementatsiooni üleviimine UDP-lt TCP-le nõudis suhteliselt väikeseid muudatusi.
+Eelkõige lisati iga sissetuleva ühenduse jaoks eraldi lõim,
+et vältida pesa enneaegset sulgemist.
 
-The peer node implementation introduced additional complexity.
-Unlike UDP communication, TCP requires an established connection before data transmission can occur.
-Consequently, a node must either initiate a connection attempt to another peer or transition into a \emph{listen} state while awaiting incoming connections.
+Partner-sõlme implementatsioon osutus täiendavalt keerukaks.
+Erinevalt UDP-suhtlusest nõuab TCP enne andmete edastamist loodud ühendust.
+Sellest tulenevalt peab sõlm kas algatama ühenduse teise partneriga
+või minema \emph{listen}-olekusse, oodates sissetulevaid ühendusi.
 
-The initial implementation, corresponding to commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3},
-operated successfully in a localhost environment where both nodes communicated through the \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface.
-However, experiments involving separate physical devices were unsuccessful.
-This result suggested that connection establishment and listening operations would need to occur concurrently, which proved difficult to implement using synchronous Rust code.
+Esialgne implementatsioon, mis vastab commit'ile \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3},
+töötas edukalt localhost-keskkonnas, kus mõlemad sõlmed suhtlesid \href{https://en.wikipedia.org/wiki/Loopback}{loopback}-liidese kaudu.
+Kuid katsed eraldiseisvate füüsiliste seadmetega ei olnud edukad.
+See tulemus viitas sellele, et ühenduse loomine ja kuulamisoperatsioonid peavad toimuma samaaegselt,
+mida oli keeruline realiseerida sünkroonse Rusti koodiga.
 
-To address this limitation, the \href{https://tokio.rs/}{Tokio} asynchronous runtime was introduced.
-Tokio enables concurrent execution of connection attempts and listener tasks within the same application context.
+Selle piirangu lahendamiseks võeti kasutusele asünkroonne käituskeskkond \href{https://tokio.rs/}{Tokio}.
+Tokio võimaldab ühenduskatsete ja kuulamisülesannete samaaegset täitmist ühe rakenduse kontekstis.
 
-\subsection{Second attempt}
+\subsection{Teine katse}
 
-The second implementation was developed following the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial},
-which presents examples based on the \href{https://github.com/tokio-rs/mini-redis/}{mini-redis} project.
-The tutorial provided a structured approach for implementing asynchronous communication and protocol handling.
+Teine implementatsioon töötati välja \href{https://tokio.rs/tokio/tutorial}{Tokio juhendi} põhjal,
+mis esitab näiteid projekti \href{https://github.com/tokio-rs/mini-redis/}{mini-redis} alusel.
+Juhend pakkus struktureeritud lähenemist asünkroonse suhtluse ja protokollikäsitluse realiseerimiseks.
 
-A simple \href{https://en.wikipedia.org/wiki/Frame_(networking)}{framing} mechanism was implemented,
-enabling the use of Rust enumerations for structured input and output message handling.
+Rakendati lihtne \href{https://en.wikipedia.org/wiki/Frame_(networking)}{framing}-mehhanism,
+mis võimaldas kasutada Rusti enumeratsioone struktureeritud sisend- ja väljundsõnumite käsitlemiseks.
 
-Both the discovery server and node implementations were rewritten to use asynchronous Tokio TCP sockets.
-In the revised design, each node launches a TCP listener in the background during initialization, registers itself with the discovery server once,
-and then repeatedly attempts to establish a connection with another node.
+Nii discovery-server kui ka sõlmede implementatsioon kirjutati ümber kasutama asünkroonseid Tokio TCP-pesasid.
+Uuendatud lahenduses käivitab iga sõlm initsialiseerimise käigus taustal TCP-kuulaja,
+registreerib ennast ühe korra discovery-serveris
+ning proovib seejärel korduvalt luua ühendust teise sõlmega.
 
-This implementation successfully established peer-to-peer TCP communication across different networks.
-The experimental setup consisted of one node operating on a notebook connected to a residential Wi-Fi network and another node operating on a mobile device connected through a cellular network.
-
-\newpage
+See implementatsioon võimaldas edukalt luua peer-to-peer TCP-suhtluse erinevate võrkude vahel.
+Eksperimentaalne seadistus koosnes ühest kodusesse Wi-Fi võrku ühendatud sülearvutil töötavast sõlmest
+ja teisest mobiilsidevõrgu kaudu ühendatud mobiiliseadmes töötavast sõlmest.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{4/node_notebook.png}
-  \caption{The notebook node searching for and successfully connecting to the mobile node}
+  \caption{Sülearvuti sõlm otsimas ja edukalt ühendumas mobiilsõlmega}
   \label{fig:tcp_punch_notebook}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{4/node_phone.png}
-  \caption{The mobile node successfully connecting to the notebook node}
+  \caption{Mobiilsõlm edukalt ühendumas sülearvuti sõlmega}
   \label{fig:tcp_punch_phone}
 \end{figure}
 
-The nodes successfully established bidirectional communication and exchanged identification messages of the form \texttt{"yo, i am <node name>"}.
-The observed behavior indicated that the connection was established directly between peers rather than through the TCP listener.
+Sõlmed lõid edukalt kahesuunalise ühenduse ning vahetasid identifitseerimissõnumeid kujul \texttt{"yo, i am <node name>"}.
+Täheldatud käitumine viitas sellele, et ühendus loodi otse partnerite vahel, mitte TCP-kuulaja kaudu.
 
-Equivalent functionality could likely have been implemented using only the Rust standard library in combination with \emph{socket2}, however,
-the adoption of Tokio simplified concurrent networking tasks and introduced established asynchronous programming practices.
-The implementation corresponding to this experiment is available under commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
+Samaväärset funktsionaalsust oleks tõenäoliselt olnud võimalik realiseerida üksnes Rusti standardteegi ja \emph{socket2} abil,
+kuid Tokio kasutuselevõtt lihtsustas samaaegseid võrgutöid ning tõi kaasa väljakujunenud asünkroonse programmeerimise praktikad.
+Selle eksperimendi implementatsioon on saadaval commit'i \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e} all.
 
-\subsection{Nodes behind the same NAT}
+\subsection{Sõlmed sama NAT-i taga}
 
-Nodes located behind the same NAT device were still unable to establish direct communication.
-This behavior was expected because peers attempted to connect using their public IP addresses.
-When packets addressed to the public IP re-enter the router from the internal network,
-the router may be unable to determine the appropriate internal destination and therefore discard the packets.
+Sama NAT-seadme taga paiknevad sõlmed ei suutnud endiselt luua otsest ühendust.
+Selline käitumine oli ootuspärane, kuna partnerid üritasid ühenduda oma avalike IP-aadresside kaudu.
+Kui avalikule IP-aadressile suunatud paketid sisenevad ruuterisse uuesti sisevõrgust,
+ei pruugi ruuter olla võimeline määrama korrektset sisemist sihtkohta ning võib paketid seetõttu kõrvale jätta.
 
 \newpage
 
-The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback})
-feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality
-according to the vendor documentation \href{https://www.asus.com/support/faq/1043024/}{provided by ASUS}. However, the observed behavior did not fully match the expected functionality.
-In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum discussion},
-the user \texttt{ColinTaylor} notes that NAT loopback support may depend on explicit port forwarding configuration, which this implementation intentionally avoids.
+Probleemi lahendamiseks on loodud \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (või \emph{NAT loopback}) funktsionaalsus.
+Katsetes kasutatud ruuter kuulub tootja dokumentatsiooni kohaselt seadmete hulka, mis seda funktsionaalsust toetavad,
+vastavalt \href{https://www.asus.com/support/faq/1043024/}{ASUS-e dokumentatsioonile}.
+Siiski ei vastanud täheldatud käitumine täielikult oodatud funktsionaalsusele.
+\href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{foorumiarutelus}
+märgib kasutaja \texttt{ColinTaylor}, et NAT loopback toe toimimine võib sõltuda eksplitsiitsest pordi suunamise konfiguratsioonist,
+mida käesolev implementatsioon teadlikult väldib.
 
-This limitation motivates the discussion presented in the following section.
+See piirang motiveerib järgmises peatükis esitatud arutelu.
 
-\section{Multicast DNS}
+\section{Multiedastus-DNS}
 
-In addition to discovering nodes over the Internet, peer discovery can also be performed using a form of
-\href{https://en.wikipedia.org/wiki/Service_discovery}{service discovery}, specifically
-\href{https://en.wikipedia.org/wiki/Multicast_DNS}{Multicast DNS (mDNS)}.
-This approach enables a node to advertise its presence within a local network, allowing other nodes
-to discover and connect to it. Consequently, nodes located on the same local network can establish
-connections without requiring Internet connectivity.
+Lisaks sõlmede avastamisele Interneti kaudu saab partnerite avastamist teostada ka
+\href{https://en.wikipedia.org/wiki/Service_discovery}{teenuseavastuse} vormi abil, täpsemalt
+\href{https://en.wikipedia.org/wiki/Multicast_DNS}{Multicast DNS-i (mDNS)} kaudu.
+Selline lähenemine võimaldab sõlmel reklaamida oma olemasolu lokaalses võrgus, võimaldades teistel sõlmedel
+see avastada ja sellega ühenduda. Selle tulemusena saavad samas lokaalses võrgus paiknevad sõlmed luua
+ühendusi ilma Interneti-ühendust vajamata.
 
 \begin{tcolorbox}
-  This approach does not enable communication between nodes located in different networks behind the same
-  carrier-grade NAT (CGNAT), unless the Internet service provider supports NAT hairpinning.
-  IPv6 connectivity mitigates this limitation.
+  Selline lähenemine ei võimalda suhtlust erinevates võrkudes paiknevate sõlmede vahel, mis asuvad sama
+  carrier-grade NAT-i (CGNAT) taga, välja arvatud juhul, kui internetiteenuse pakkuja toetab NAT hairpinning'ut.
+  IPv6 ühenduvus leevendab seda piirangut.
 \end{tcolorbox}
 
-The \href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rust library was used to implement
-service discovery functionality. The integration primarily required replacing the previously implemented
-discovery server with mDNS-based discovery.
+Teenuseavastuse funktsionaalsuse realiseerimiseks kasutati
+\href{https://crates.io/crates/mdns-sd}{\texttt{mdns-sd}} Rusti teeki.
+Integratsioon nõudis peamiselt eelnevalt realiseeritud avastusserveri asendamist mDNS-põhise avastusega.
 
-\subsection{Implementation}
+\subsection{Teostus}
 
-The integration of mDNS functionality was relatively straightforward due to the simplicity of the library API,
-which is conceptually similar to the previously implemented discovery client.
-The following example demonstrates the creation and registration of a service
-\footnote{A service record contains the service type, IP addresses, hostname, identifier, and optional properties.}:
+mDNS-funktsionaalsuse integreerimine oli suhteliselt lihtne tänu teegi API lihtsusele,
+mis on kontseptuaalselt sarnane eelnevalt realiseeritud avastusklientiga.
+Järgmine näide demonstreerib teenuse loomist ja registreerimist
+\footnote{Teenusekirje sisaldab teenuse tüüpi, IP-aadresse, hostinime, identifikaatorit ning valikulisi omadusi.}:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -778,12 +776,12 @@ let service = ServiceInfo::new(
   .enable_addr_auto();
 sd.register(service)?; // ServiceDaemon will handle automatic broadcasting of the service
   \end{minted}
-  \caption{Example of registering a service for discovery using \texttt{mdns-sd}}
+  \caption{Näide teenuse registreerimisest avastamiseks kasutades teeki \texttt{mdns-sd}}
 \end{figure}
 
 \newpage
 
-Service discovery is implemented as follows:
+Teenuseavastus on realiseeritud järgmiselt:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -815,66 +813,65 @@ loop {
     };
 }
   \end{minted}
-  \caption{Discovery of peer services and retrieval of peer IP addresses using \texttt{mdns-sd}}
+  \caption{Partnerteenuste avastamine ja partneri IP-aadresside hankimine kasutades teeki \texttt{mdns-sd}}
 \end{figure}
 
-The function shown above blocks until the target node is discovered, after which it returns the corresponding
-network address that is subsequently used to establish a connection. One important constraint is that the
-service name component in the service type format
-(\textbf{\_name}.\_protocol.domain) cannot exceed 15 characters.
+Ülaltoodud funktsioon blokeerib täitmise kuni sihtsõlme avastamiseni, mille järel tagastatakse vastav
+võrguaadress, mida kasutatakse seejärel ühenduse loomiseks. Üheks oluliseks piiranguks on asjaolu, et
+teenusetüübi vormingus oleva teenusenime komponent
+(\textbf{\_name}.\_protocol.domain) ei tohi ületada 15 märki.
 
-Experimental evaluation demonstrated that node discovery occurs with low latency, typically within a fraction
-of a second on a local network. The complete implementation is available in commit
+Eksperimentaalne hindamine näitas, et sõlmede avastamine toimub väikese latentsusega, tavaliselt lokaalses võrgus sekundi murdosa jooksul.
+Täielik teostus on saadaval commit'is
 \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
 
-\section{Developing the Final Application}
+\section{Lõpliku rakenduse arendamine}
 
-After experimenting with several approaches for establishing a peer-to-peer connection between two peers, a minimum viable product (MVP) was implemented using the
+Pärast mitme lähenemisviisi katsetamist kahe partneri vahelise peer-to-peer ühenduse loomiseks realiseeriti minimaalselt elujõuline toode (MVP), kasutades
 \href{https://en.wikipedia.org/wiki/Minimum_viable_product}{iroh}
-library. The resulting application was designed to be sufficiently practical for deployment on personal servers and for experimentation in small network environments.
+teeki. Tulemuseks olev rakendus kavandati piisavalt praktiliseks kasutamiseks isiklikes serverites ning eksperimenteerimiseks väikestes võrgukeskkondades.
 
-The application consists of the following components:
+Rakendus koosneb järgmistest komponentidest:
 \begin{enumerate}
-  \item Configuration (Section~\ref{sec:appconfig}) --- responsible for persisting the private key used for peer identity and storing peer information
-  \item TUN device (Section~\ref{sec:apptun}) --- responsible for receiving and transmitting IP packets from the host system
-  \item Router (Section~\ref{sec:approuter}) --- responsible for forwarding packets to the appropriate peer according to the destination IP address
-  \item Peers (Section~\ref{sec:apppeers}) --- connected through the \texttt{iroh} library to exchange routed IP packets
+  \item Konfiguratsioon (Section~\ref{sec:appconfig}) --- vastutab partneri identiteedi jaoks kasutatava privaatvõtme säilitamise ning partneriteabe talletamise eest
+  \item TUN-seade (Section~\ref{sec:apptun}) --- vastutab IP-pakettide vastuvõtmise ja edastamise eest hostisüsteemist
+  \item Ruuter (Section~\ref{sec:approuter}) --- vastutab pakettide edastamise eest sobivale partnerile vastavalt siht-IP-aadressile
+  \item Partnerid (Section~\ref{sec:apppeers}) --- ühendatud \texttt{iroh} teegi kaudu marsruuditavate IP-pakettide vahetamiseks
 \end{enumerate}
 
-The implementation of the application preceded the writing of this section. The corresponding source code is available in commit
+Rakenduse teostus eelnes käesoleva peatüki kirjutamisele. Vastav lähtekood on saadaval commit'is
 \href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
 
-Figure~\ref{fig:network_pipeline} illustrates the packet routing pipeline implemented in the application.
+Joonis~\ref{fig:network_pipeline} illustreerib rakenduses realiseeritud pakettide marsruutimise töövoogu.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/network_pipeline.png}
-  \caption{Pipeline illustrating routing of IP packets between systems}
+  \caption{IP-pakettide marsruutimist süsteemide vahel illustreeriv töövoog}
   \label{fig:network_pipeline}
 \end{figure}
 
 \newpage
 
-\subsection{Configuration} \label{sec:appconfig}
+\subsection{Konfiguratsioon} \label{sec:appconfig}
 
-The
-\href{https://en.wikipedia.org/wiki/Public-key_cryptography}{cryptographic key pair}
-serves not only as a security mechanism but also as the identity of a peer.
-The public key is used both for peer discovery and for establishing connections.
-Consequently, the private key must be persisted so that the application maintains a stable identifier across executions and can reliably connect to previously known peers.
+\href{https://en.wikipedia.org/wiki/Public-key_cryptography}{Krüptograafiline võtmepaar}
+toimib lisaks turvamehhanismile ka sõlme identiteedina.
+Avalikku võtit kasutatakse nii sõlmede avastamiseks kui ka ühenduste loomiseks.
+Sellest tulenevalt tuleb privaatvõti püsivalt salvestada, et rakendus säilitaks käivituste vahel stabiilse identifikaatori ning suudaks usaldusväärselt ühenduda varem tuntud sõlmedega.
 
-For simplicity, both the private key and peer identifiers are stored in a single configuration file.
-\footnote{An alternative design could separate the private key into a dedicated file.}
-If no private key is present in the configuration, the application automatically generates one and stores it in the configuration file.
+Lihtsuse huvides salvestatakse nii privaatvõti kui ka sõlmede identifikaatorid ühte konfiguratsioonifaili.
+\footnote{Alternatiivse lahendusena võiks privaatvõtme eraldada eraldi faili.}
+Kui konfiguratsioonis privaatvõti puudub, genereerib rakendus selle automaatselt ning salvestab konfiguratsioonifaili.
 
-Because the configuration must support both reading and modification while preserving existing comments and formatting, the
+Kuna konfiguratsioon peab toetama nii lugemist kui ka muutmist olemasolevaid kommentaare ja vormingut säilitades, valiti vorminguks
 \href{https://toml.io/en/}{TOML}
-format was selected together with the Rust library
+koos Rusti teegiga
 \href{https://crates.io/crates/toml_edit}{\texttt{toml\_edit}},
-which preserves the original document structure during modification.
+mis säilitab muutmise käigus dokumendi algse struktuuri.
 
-To facilitate local testing, the application allows the configuration file path to be specified through
-command-line arguments. This functionality is implemented using the \texttt{clap} library.
+Kohaliku testimise hõlbustamiseks võimaldab rakendus määrata konfiguratsioonifaili asukoha käsurea argumentide kaudu.
+See funktsionaalsus on realiseeritud teegi \texttt{clap} abil.
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -892,20 +889,20 @@ fn main() {
     let cli = Cli::parse();
 }
   \end{minted}
-  \caption{Argument parsing for selecting a configuration file}
+  \caption{Argumentide parsimine konfiguratsioonifaili valimiseks}
 \end{figure}
 
-This implementation enables the use of either the \texttt{-c} or \texttt{--config} argument, for example \texttt{-c config2.toml},
-to load an alternative configuration file. By default, the application loads \texttt{config.toml}.
-The \texttt{clap} library additionally provides automatically generated help messages and error handling.
+Selline teostus võimaldab kasutada argumente \texttt{-c} või \texttt{--config}, näiteks \texttt{-c config2.toml},
+alternatiivse konfiguratsioonifaili laadimiseks. Vaikimisi laadib rakendus faili \texttt{config.toml}.
+Lisaks pakub teek \texttt{clap} automaatselt genereeritud abisõnumeid ja veakäsitlust.
 
 \newpage
 
-The following function either parses a
-\href{https://en.wikipedia.org/wiki/Base64}{Base64}-encoded private key
-from the configuration file or generates a new key using
+Järgmine funktsioon parsib konfiguratsioonifailist
+\href{https://en.wikipedia.org/wiki/Base64}{Base64}-kodeeritud privaatvõtme
+või genereerib uue võtme kasutades funktsiooni
 \href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}.
-If a new key is generated, the updated configuration is written back to disk.
+Kui genereeritakse uus võti, kirjutatakse uuendatud konfiguratsioon tagasi kettale.
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -939,14 +936,14 @@ fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<Secre
     }
 }
   \end{minted}
-  \caption{Function for parsing or generating a private key}
+  \caption{Funktsioon privaatvõtme parsimiseks või genereerimiseks}
 \end{figure}
 
 \newpage
 
-Since the private key is only required during endpoint creation,
-\footnote{The private key is used exclusively during endpoint initialization and does not need to be retained afterward.}
-the remaining configuration data, such as peer definitions, is parsed independently.
+Kuna privaatvõtit on vaja ainult lõpp-punkti loomise ajal,
+\footnote{Privaatvõtit kasutatakse üksnes lõpp-punkti initsialiseerimisel ning seda ei ole pärast seda vaja säilitada.}
+parsitatakse ülejäänud konfiguratsiooniandmed, näiteks sõlmede definitsioonid, sellest sõltumatult.
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -1001,13 +998,13 @@ impl Peer {
 }
 
   \end{minted}
-  \caption{Functions for parsing peer configuration}
+  \caption{Funktsioonid sõlmede konfiguratsiooni parsimiseks}
 \end{figure}
 
 \newpage
 
-Finally, the \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions are combined into a single loading function,
-which is invoked during application initialization.
+Lõpuks ühendatakse funktsioonid \texttt{Config::parse} ja \texttt{get\_or\_generate\_secret\_key} üheks laadimisfunktsiooniks,
+mida kutsutakse rakenduse initsialiseerimise käigus.
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -1035,182 +1032,182 @@ fn main() -> Result<()> {
     // secret_key can be later used in Endpoint::builder(...).secret_key(secret_key)
 }
   \end{minted}
-  \caption{Configuration loading function}
+  \caption{Konfiguratsiooni laadimise funktsioon}
 \end{figure}
 
-This design enables the application to maintain its own private key while storing the public identifiers of remote peers.
-Although the implementation introduces additional complexity, it preserves flexibility for future extensions of the configuration system.
+Selline ülesehitus võimaldab rakendusel säilitada oma privaatvõtit, hoides samal ajal kaugsõlmede avalikke identifikaatoreid.
+Kuigi teostus lisab süsteemile täiendavat keerukust, säilitab see paindlikkuse konfiguratsioonisüsteemi edaspidiseks laiendamiseks.
 
-\subsection{TUN device} \label{sec:apptun}
-A \href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN device} is a \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtual network interface}
-that enables software applications to transmit and receive \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP packets}. TUN devices are commonly used in VPN implementations
-\footnote{Certain implementations use TAP devices instead, which operate at the MAC layer and provide access to Ethernet frames.},
-and are suitable for this project because they allow IP addresses to be derived from peer endpoint identifiers, enabling communication through standard networking software.
+\subsection{TUN-seade} \label{sec:apptun}
+\href{https://en.wikipedia.org/wiki/TUN/TAP}{TUN-seade} on \href{https://en.wikipedia.org/wiki/Network_virtualization}{virtuaalne võrguliides},
+mis võimaldab tarkvararakendustel saata ja vastu võtta \href{https://en.wikipedia.org/wiki/Internet_Protocol}{IP-pakette}. TUN-seadmeid kasutatakse tavaliselt VPN-lahendustes
+\footnote{Mõned teostused kasutavad selle asemel TAP-seadmeid, mis töötavad MAC-kihis ja võimaldavad ligipääsu Etherneti kaadritele.},
+ning need sobivad käesoleva projekti jaoks, kuna võimaldavad tuletada IP-aadresse võrdseadmete lõpp-punkti identifikaatoritest, võimaldades suhtlust standardse võrgutarkvara kaudu.
 
-The \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} library was selected because it provides support for all major desktop operating systems.
+Valiti \href{https://crates.io/crates/tun-rs/}{\texttt{tun-rs}} teek, kuna see toetab kõiki peamisi lauaarvutite operatsioonisüsteeme.
 
 \newpage
 
-To initialize a TUN device, \texttt{tun-rs} provides a concise configuration interface:
+TUN-seadme initsialiseerimiseks pakub \texttt{tun-rs} kompaktset konfiguratsiooniliidest:
 \begin{figure}[H]
   \begin{minted}{rust}
 use tun_rs::{AsyncDevice, DeviceBuilder};
 
 fn create_device() -> std::io::Result<AsyncDevice> {
     DeviceBuilder::new()
-        .name("petope0") // device name that is shown in ifconfig
-        .mtu(65535) // MTU, usually 1500, minimum 1280 for ipv6 on Linux
+        .name("petope0") // seadme nimi, mida kuvatakse ifconfig käsus
+        .mtu(65535) // MTU, tavaliselt 1500, Linuxis ipv6 jaoks minimaalne 1280
         .ipv4("10.0.0.1", 32, None)
         .ipv6("fdaa::beaf", 128)
-        .layer(tun_rs::Layer::L3) // specify L3 for TUN device, L2 for TAP
+        .layer(tun_rs::Layer::L3) // määra TUN-seadme jaoks L3, TAP jaoks L2
         .build_async()
 }
   \end{minted}
-  \caption{Example of creating a TUN device with \texttt{tun-rs}}
+  \caption{Näide TUN-seadme loomisest \texttt{tun-rs} teegi abil}
   \label{code:create_tun}
 \end{figure}
 
-To transmit and receive IP packets, the library provides a higher-level abstraction over
+IP-pakettide saatmiseks ja vastuvõtmiseks pakub teek kõrgema taseme abstraktsiooni
 \href{https://docs.rs/tun-rs/2.8.3/tun_rs/struct.AsyncDevice.html}{AsyncDevice}
-through the \href{https://docs.rs/tun-rs/2.8.3/tun_rs/async_framed/index.html}{async\_framed}
-module. This abstraction exposes an asynchronous interface for packet processing, avoiding the need
-for manual manipulation of raw byte streams.
+üle \href{https://docs.rs/tun-rs/2.8.3/tun_rs/async_framed/index.html}{async\_framed}
+mooduli kaudu. See abstraktsioon võimaldab kasutada asünkroonset liidest pakettide töötlemiseks, vältides vajadust töötada käsitsi toor-baidivoogudega.
 \begin{figure}[H]
   \begin{minted}{rust}
 use tun_rs::async_framed::DeviceFramed;
 use futures::{SinkExt, StreamExt};
 
-// it is important to wrap AsyncDevice in Arc so it could be splitted
+// oluline on ümbritseda AsyncDevice Arc-iga,
+// et seda oleks võimalik jagada
 let dev = Arc::new(create_device().unwrap());
-// create DeviceFramed and split into send and receive parts
+// loo DeviceFramed ja jaga saatmise ja vastuvõtu osadeks
 let (mut rx, mut tx) = DeviceFramed::new(dev, BytesCodec::new()).split();
 
-// task that receives IP packets
+// ülesanne, mis võtab vastu IP-pakette
 tokio::spawn(async move {
-    // use futures::StreamExt interface to receive
+    // kasuta vastuvõtuks futures::StreamExt liidest
     while let Some(frame) = rx.next().await {
         match frame {
             Ok(bytes) => {
-                // process incoming IP packet from "bytes"
+                // töötle sissetulevat IP-paketti "bytes" muutujast
             }
-            Err(e) => eprintln!("parse frame from tun: {:?}", e),
+            Err(e) => eprintln!("raami parsimine tun-seadmest: {:?}", e),
         }
     }
 });
 
-// task that sends packets
+// ülesanne, mis saadab pakette
 tokio::spawn(async move {
-    // receive a packet from some sort of channel
+    // võta pakett mingist kanalist
     if let Err(e) = tx.send(bytes).await {
-        eprintln!("parse bytes to frame to tun: {:?}", e);
+        eprintln!("baitide teisendamine raamiks tun-seadmesse: {:?}", e);
     }
 });
   \end{minted}
-  \caption{Example of asynchronous packet transmission and reception using \texttt{tun-rs}}
+  \caption{Näide asünkroonsest pakettide saatmisest ja vastuvõtmisest \texttt{tun-rs} abil}
 \end{figure}
 
-The implementation integrates directly with the asynchronous execution model provided by Tokio, simplifying concurrent packet processing.
+Teostus integreerub otseselt Tokio pakutava asünkroonse täitmismudeliga, lihtsustades samaaegset pakettide töötlemist.
 
 \newpage
 
-\subsubsection{About huge MTU} \label{sec:hugemtu}
-As shown in Listing~\ref{code:create_tun}, the TUN device is configured with an MTU value of 65535.
+\subsubsection{Suure MTU kohta} \label{sec:hugemtu}
+Nagu näidatud loendis~\ref{code:create_tun}, on TUN-seade konfigureeritud MTU väärtusega 65535.
 
-This configuration was motivated by the discussion presented in the
-\href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasil blog post}
-regarding large MTU values and \href{https://en.wikipedia.org/wiki/Path_MTU_Discovery}{Path MTU Discovery}.
-Path MTU Discovery enables intermediate systems to notify endpoints when packets exceed the supported transmission size, allowing fragmentation to occur at an appropriate MTU.
+See konfiguratsioon põhineb
+\href{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}{Yggdrasili blogipostituses}
+esitatud arutelul suurte MTU väärtuste ja \href{https://en.wikipedia.org/wiki/Path_MTU_Discovery}{Path MTU Discovery} kohta.
+Path MTU Discovery võimaldab vahepealsetel süsteemidel teavitada lõpp-punkte olukorrast, kus paketid ületavad toetatud edastussuuruse, võimaldades fragmenteerimist sobiva MTU väärtuse juures.
 
-A larger MTU may reduce fragmentation overhead in future iterations of the system, potentially decreasing both bandwidth overhead and CPU utilization associated with packet fragmentation.
+Suurem MTU võib süsteemi tulevastes iteratsioonides vähendada fragmenteerimise üldkulu, vähendades potentsiaalselt nii ribalaiuse üldkulu kui ka paketifragmentatsiooniga seotud protsessorikasutust.
 
-\subsubsection{Adding more routes}
-At this stage, the TUN device only contains locally assigned IP addresses. However, the operating system routing table must also contain routes for peer addresses
-(see Section~\ref{sec:apppeers}) so that packets destined for peers are forwarded through the TUN interface.
+\subsubsection{Täiendavate marsruutide lisamine}
+Selles etapis sisaldab TUN-seade ainult lokaalselt määratud IP-aadresse. Operatsioonisüsteemi marsruutimistabel peab siiski sisaldama ka võrdseadmete aadresside marsruute
+(vt jaotis~\ref{sec:apppeers}), et võrdseadmetele suunatud paketid edastataks läbi TUN-liidese.
 
-To manage routing entries, the \href{https://crates.io/crates/net-route}{\texttt{net-route}} library was used because it provides cross-platform route manipulation support.
-The following example demonstrates how to add an IPv4 route associated with the TUN device:
+Marsruutimistabeli kirjete haldamiseks kasutati \href{https://crates.io/crates/net-route}{\texttt{net-route}} teeki, kuna see toetab platvormiülest marsruutide haldust.
+Järgmine näide demonstreerib, kuidas lisada TUN-seadmega seotud IPv4 marsruuti:
 \begin{figure}[H]
   \begin{minted}{rust}
 use net_route::{Handle, Route};
 
-// handle is used to manipulate system routing table
+// handle kasutatakse süsteemi marsruutimistabeli haldamiseks
 let handle = net_route::Handle::new().unwrap();
-// interface index is used to associate routes with our TUN device
+// liidese indeksit kasutatakse marsruutide seostamiseks TUN-seadmega
 let ifindex = dev.if_index().unwrap();
 
-// ip address and prefix
+// IP-aadress ja prefiks
 let route = Route::new("10.0.0.2".parse().unwrap(), 32)
     .with_ifindex(ifindex);
 
-handle.add(&route).await.unwrap(); // add route above to the routing table
+handle.add(&route).await.unwrap(); // lisa ülaltoodud marsruut marsruutimistabelisse
   \end{minted}
-  \caption{Example of adding a route using the \texttt{net-route} library}
+  \caption{Näide marsruudi lisamisest \texttt{net-route} teegi abil}
 \end{figure}
 
-After the route is added, packets addressed to the specified destination are forwarded through the TUN interface,
-allowing the application to process them.
+Pärast marsruudi lisamist edastatakse määratud sihtkohta adresseeritud paketid läbi TUN-liidese,
+võimaldades rakendusel neid töödelda.
 
 \newpage
 
-\subsection{Router} \label{sec:approuter}
+\subsection{Marsruuter} \label{sec:approuter}
 
-The router component is responsible for transmitting and receiving IP packets.
-Consequently, an efficient mechanism for transferring packet data between asynchronous tasks is required.
+Marsruuteri komponent vastutab IP-pakettide saatmise ja vastuvõtmise eest.
+Seetõttu on vajalik tõhus mehhanism paketandmete edastamiseks asünkroonsete ülesannete vahel.
 
-\href{https://en.wikipedia.org/wiki/Channel_(programming)}{Channels} are commonly used for communication between threads and asynchronous tasks.
-Tokio provides the \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
-module for this purpose. However, standard queue-based channels preserve older messages until they are processed, thereby prioritizing earlier packets over more recent ones.
-Such behavior may negatively affect latency-sensitive workloads, including
-\href{https://en.wikipedia.org/wiki/Real-time_communication}{real-time communication} systems.
+\href{https://en.wikipedia.org/wiki/Channel_(programming)}{Kanaleid} kasutatakse tavaliselt suhtluseks lõimede ja asünkroonsete ülesannete vahel.
+Tokio pakub selleks \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
+moodulit. Standardsed järjekorrapõhised kanalid säilitavad siiski vanemad sõnumid kuni nende töötlemiseni, eelistades seeläbi varasemaid pakette uuematele.
+Selline käitumine võib negatiivselt mõjutada latentsustundlikke töökoormusi, sealhulgas
+\href{https://en.wikipedia.org/wiki/Real-time_communication}{reaalajas suhtlussüsteeme}.
 
-To address this limitation, the \href{https://github.com/brunocodutra/ring-channel}{\texttt{ring-channel}} library was selected.
-This library implements a \href{https://en.wikipedia.org/wiki/Circular_buffer}{ring-buffer}-based channel
-with \href{https://en.wikipedia.org/wiki/Non-blocking_algorithm}{lock-free} synchronization semantics.
-When the buffer capacity is exceeded, older packets are overwritten by newer packets, enabling the system to discard stale data during periods of overload.
+Selle piirangu lahendamiseks valiti \href{https://github.com/brunocodutra/ring-channel}{\texttt{ring-channel}} teek.
+See teek realiseerib \href{https://en.wikipedia.org/wiki/Circular_buffer}{ring-buffer}-il põhineva kanali
+koos \href{https://en.wikipedia.org/wiki/Non-blocking_algorithm}{lock-free} sünkroniseerimissemantikaga.
+Kui puhvri maht ületatakse, kirjutatakse vanemad paketid uuemate poolt üle, võimaldades süsteemil ülekoormuse perioodil aegunud andmed kõrvale jätta.
 
-Since data received from the TUN device consists of raw byte sequences, the \href{https://crates.io/crates/etherparse}{\texttt{etherparse}}
-library is used to parse IP packets. The following example illustrates its usage within the router implementation:
+Kuna TUN-seadmest vastuvõetud andmed koosnevad toor-baidijadadest, kasutatakse IP-pakettide parsimiseks \href{https://crates.io/crates/etherparse}{\texttt{etherparse}}
+teeki. Järgmine näide illustreerib selle kasutamist marsruuteri teostuses:
 \begin{figure}[H]
   \begin{minted}{rust}
 fn route(
-    // bytes received from TUN device
+    // TUN-seadmest saadud baidid
     bytes: Bytes,
-    // ring-channel buffer destined to TUN device
+    // TUN-seadmele suunatud ring-channel puhver
     to_network_tx: &RingSender<Bytes>
 ) -> Result<()> {
-    // parse bytes into a IP packet from etherparse library
-    let ip = IpSlice::from_slice(&bytes[..]).context("parse incoming ip packet")?;
-    // IpAddr from where packet has come
+    // parsi baidid etherparse teegi IP-paketiks
+    let ip = IpSlice::from_slice(&bytes[..]).context("sissetuleva IP-paketi parsimine")?;
+    // IpAddr, kust pakett pärineb
     let src = ip.source_addr();
-    // IpAddr where packet is destined
+    // IpAddr, kuhu pakett on suunatud
     let dst = ip.destination_addr();
 
-    // this is local packet, just return it back to kernel
+    // tegemist on lokaalse paketiga, tagasta see kernelile
     if src == dst {
         let _ = to_network_tx.send(bytes);
         return Ok(());
     }
 
-    // TODO: send packets to different peers based on IP address
+    // TODO: saada paketid erinevatele võrdseadmetele IP-aadressi alusel
     
     Ok(())
 }
   \end{minted}
-  \caption{Routing function that parses raw bytes into IP packets for address-based routing}
+  \caption{Marsruutimisfunktsioon, mis parsib toorbaitidest IP-paketid aadressipõhiseks marsruutimiseks}
 \end{figure}
 
-This implementation already enables local packet processing through the TUN interface without requiring complex routing logic.
-The existing Rust ecosystem significantly reduces implementation complexity by providing reusable abstractions for IP packet parsing and asynchronous networking operations.
+See teostus võimaldab juba lokaalset paketitöötlust läbi TUN-liidese ilma keeruka marsruutimisloogika vajaduseta.
+Olemasolev Rusti ökosüsteem vähendab märkimisväärselt teostuse keerukust, pakkudes korduvkasutatavaid abstraktsioone IP-pakettide parsimiseks ja asünkroonseteks võrgutoiminguteks.
 
-\subsection{Peers} \label{sec:apppeers}
+\subsection{Sõlmed} \label{sec:apppeers}
 
-The peer component of the application is responsible for connection management and data transmission.
-The router component forwards packets received from the TUN device to the corresponding peer based on the destination address.
+Rakenduse sõlmede komponent vastutab ühenduste haldamise ja andmete edastamise eest.
+Ruuteri komponent suunab TUN-seadmest vastuvõetud paketid sihtaadressi alusel vastavale sõlmele.
 
-\subsubsection{Converting peer identifiers to IP addresses}
+\subsubsection{Sõlme identifikaatorite teisendamine IP-aadressideks}
 
-The address assignment approach is inspired by the design of Yggdrasil, where IPv6 addresses are derived from node public keys.
-A similar mechanism is implemented in this project.
+Aadresside määramise lähenemine on inspireeritud Yggdrasil-i disainist, kus IPv6-aadressid tuletatakse sõlmede avalikest võtmetest.
+Sarnane mehhanism on realiseeritud ka käesolevas projektis.
 \begin{figure}[H]
   \begin{minted}{rust}
 // converts EndpointId into an ipv4 address in 10.0.0.0/8 subnet
@@ -1237,17 +1234,17 @@ fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
     )
 }
   \end{minted}
-  \caption{Functions that convert \texttt{EndpointId} values into IP addresses}
+  \caption{\texttt{EndpointId} väärtuste teisendamine IP-aadressideks}
 \end{figure}
 
-These functions allow the application to generate deterministic IP addresses for both the \emph{TUN interface} and connected \emph{peers}.
-Since the addresses are derived directly from the public key, both communication endpoints independently obtain identical address assignments.
+Need funktsioonid võimaldavad rakendusel genereerida deterministlikke IP-aadresse nii \emph{TUN-liidesele} kui ka ühendatud \emph{sõlmedele}.
+Kuna aadressid tuletatakse otseselt avalikust võtmest, saavad mõlemad suhtlusosapooled sõltumatult identsed aadressimäärangud.
 
 \newpage
 
-\subsubsection{Routing packets to peers}
+\subsubsection{Paketide marsruutimine sõlmedele}
 
-Packet routing from the router to individual peers can then be implemented using destination IP addresses:
+Paketide marsruutimist ruuterist individuaalsetele sõlmedele saab seejärel realiseerida sihtkoha IP-aadresside abil:
 \begin{figure}[H]
   \begin{minted}{rust}
 // example of peer structure
@@ -1294,16 +1291,16 @@ fn route(
     }
 }
   \end{minted}
-  \caption{IP-based routing to individual peers}
+  \caption{IP-põhine marsruutimine individuaalsetele sõlmedele}
 \end{figure}
 
 \newpage
 
-\subsubsection{Establishing a connection with a peer}
+\subsubsection{Ühenduse loomine sõlmega}
 
-Before packets can be transmitted, a connection between peers must first be established.
-A peer intending to send data initiates a connection, while the remote peer accepts incoming connections.
-Connection establishment can be implemented as follows:
+Enne pakettide edastamist tuleb esmalt luua ühendus sõlmede vahel.
+Andmeid saata sooviv sõlm algatab ühenduse, samal ajal kui kaugpoolne sõlm aktsepteerib sissetulevaid ühendusi.
+Ühenduse loomise saab realiseerida järgnevalt:
 \begin{figure}[H]
   \begin{minted}{rust}
 // presets::N0 contain n0 provided relays and discovery services
@@ -1319,10 +1316,10 @@ let conn = endpoint.connect(peer.id, b"petope/0").await.unwrap()
 
 // here connection can be cached and used to send and receive data
   \end{minted}
-  \caption{Initiating a connection to a peer}
+  \caption{Ühenduse algatamine sõlmega}
 \end{figure}
 
-Receiving incoming connections requires additional handling:
+Sissetulevate ühenduste vastuvõtmine nõuab täiendavat käsitlemist:
 \begin{figure}[H]
   \begin{minted}{rust}
 // additional map to get a peer by its id
@@ -1341,24 +1338,24 @@ while let Some(incoming) = endpoint.accept().await {
     }
 }
   \end{minted}
-  \caption{Receiving incoming connections from peers}
+  \caption{Sissetulevate ühenduste vastuvõtmine sõlmedelt}
 \end{figure}
 
-The previous examples omit the implementation of connection caching.
-Since the application is asynchronous, cached connections may be accessed concurrently by multiple threads and may also be replaced during runtime.
-One possible synchronization primitive is
+Eelnevates näidetes on ühenduste vahemällu salvestamise implementatsioon välja jäetud.
+Kuna rakendus on asünkroonne, võivad mitmed lõimed samaaegselt pääseda ligi vahemällu salvestatud ühendustele ning neid võidakse käitusajal ka asendada.
+Ühe võimaliku sünkroniseerimisprimitiivina saab kasutada
 \href{https://doc.rust-lang.org/std/sync/struct.Mutex.html}{\texttt{std::sync::Mutex}},
-although connections are expected to be read significantly more frequently than modified.
-A more suitable alternative is
+kuigi ühendusi eeldatavasti loetakse oluliselt sagedamini kui muudetakse.
+Sobivam alternatiiv on
 \href{https://doc.rust-lang.org/std/sync/struct.RwLock.html}{\texttt{std::sync::RwLock}},
-which supports concurrent read access.
-In this implementation,
-\href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}}
-is used instead, as it provides efficient atomic replacement of shared values with minimal synchronization overhead.
+mis võimaldab samaaegset lugemisjuurdepääsu.
+Käesolevas implementatsioonis kasutatakse siiski
+\href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}} teeki,
+kuna see võimaldab jagatud väärtuste efektiivset atomaarset asendamist minimaalse sünkroniseerimiskuluga.
 
 \newpage
 
-The following function stores and replaces cached connections:
+Järgmine funktsioon salvestab ja asendab vahemällu salvestatud ühendusi:
 \begin{figure}[H]
   \begin{minted}{rust}
 struct Peer {
@@ -1377,11 +1374,11 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{Function that stores a reusable connection}
+  \caption{Taaskasutatava ühenduse salvestamise funktsioon}
 \end{figure}
 
-Connections are generally retrieved only when data transmission is required.
-Therefore, the retrieval function may also establish a new connection automatically if no active connection is available:
+Ühendused hangitakse üldjuhul alles siis, kui andmete edastamine on vajalik.
+Seetõttu võib ühenduse hankimise funktsioon automaatselt luua ka uue ühenduse, kui aktiivne ühendus puudub:
 \begin{figure}[H]
   \begin{minted}{rust}
 impl Peer {
@@ -1415,26 +1412,26 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{Function that retrieves an existing connection or establishes a new one}
+  \caption{Funktsioon olemasoleva ühenduse hankimiseks või uue ühenduse loomiseks}
 \end{figure}
 
 \newpage
 
-\subsubsection{Requesting packet fragmentation}
+\subsubsection{Pakettide fragmenteerimise taotlemine}
 
-The remaining functionality involves transmitting and receiving IP packets between peers.
-As described in Section~\ref{sec:hugemtu}, the TUN device is configured with an MTU value of \emph{65535}, which exceeds the typical Ethernet MTU of approximately 1500 bytes.
-Consequently, Path MTU Discovery is required to ensure that packets are fragmented appropriately.
+Ülejäänud funktsionaalsus hõlmab IP-pakettide saatmist ja vastuvõtmist sõlmede vahel.
+Nagu kirjeldatud jaotises~\ref{sec:hugemtu}, on TUN-seadme MTU väärtuseks määratud \emph{65535}, mis ületab tavapärase Etherneti MTU suuruse ligikaudu 1500 baiti.
+Sellest tulenevalt on vajalik kasutada Path MTU Discovery mehhanismi, et tagada pakettide korrektne fragmenteerimine.
 
-The \texttt{iroh} connection interface provides the minimum supported MTU, which can be used to generate ICMP responses instructing the operating system to reduce packet size.
-Although ICMP is commonly associated with utilities such as \texttt{ping}, it also plays an essential role in network error reporting and path MTU discovery.
-Blocking all ICMP traffic may negatively affect network functionality and should generally be avoided.
-Instead, filtering should be limited to specific message types when necessary.
+\texttt{iroh} ühendusliides pakub minimaalset toetatud MTU väärtust, mida saab kasutada ICMP-vastuste genereerimiseks, et teavitada operatsioonisüsteemi paketi suuruse vähendamise vajadusest.
+Kuigi ICMP seostatakse sageli utiliitidega nagu \texttt{ping}, mängib see olulist rolli ka võrguvigade raporteerimisel ja Path MTU Discovery protsessis.
+Kogu ICMP liikluse blokeerimine võib negatiivselt mõjutada võrgu toimimist ning seda tuleks üldjuhul vältida.
+Selle asemel tuleks vajadusel filtreerida üksnes spetsiifilisi sõnumitüüpe.
 
-According to
-\href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443},
-ICMPv6 defines the \emph{Packet Too Big} message (type 2, code 0), which informs the sender that the transmitted packet exceeds the supported MTU.
-The response must also include a portion of the original IP packet.
+Vastavalt
+\href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443}-le
+defineerib ICMPv6 \emph{Packet Too Big} sõnumi (tüüp 2, kood 0), mis teavitab saatjat, et edastatud pakett ületab toetatud MTU suuruse.
+Vastus peab sisaldama ka osa algsest IP-paketist.
 \begin{figure}[H]
   \begin{minted}{rust}
 // returns an icmp response that fragmentation is needed, payload must be the same as ip slice
@@ -1461,14 +1458,14 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
     }
 }
   \end{minted}
-  \caption{Function that creates an ICMP \emph{Packet Too Big} response}
+  \caption{ICMP \emph{Packet Too Big} vastuse loomise funktsioon}
 \end{figure}
 
 \newpage
 
-\subsubsection{Sending packets to peers}
+\subsubsection{Pakettide saatmine sõlmedele}
 
-The following implementation combines the previously introduced functionality into a complete packet transmission routine:
+Järgnev implementatsioon ühendab eelnevalt kirjeldatud funktsionaalsuse terviklikuks pakettide edastamise mehhanismiks:
 \begin{figure}[H]
   \begin{minted}{rust}
 impl Peer {
@@ -1504,120 +1501,122 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{Complete packet transmission function for a peer}
+  \caption{Täielik pakettide edastamise funktsioon sõlme jaoks}
 \end{figure}
 
-Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \\ \texttt{conn.read\_datagram()}
-and forwarding the received packets to the TUN device using \\ \texttt{to\_network\_tx.send(bytes)}.
+Datagrammide vastuvõtmine on võrreldes eelnevaga märksa lihtsam ning seisneb peamiselt funktsiooni 
+\texttt{conn.read\_datagram()} korduvates väljakutsetes ja vastuvõetud pakettide edastamises TUN-seadmele kasutades
+\texttt{to\_network\_tx.send(bytes)}.
 
-By integrating the previously described components, including configuration management,
-routing, peer communication, and packet handling, the resulting implementation provides
-a functional peer-to-peer VPN solution in which peers are configured locally.
+Integreerides eelnevalt kirjeldatud komponendid, sealhulgas konfiguratsiooni halduse, marsruutimise, 
+sõlmedevahelise suhtluse ja pakettide käsitlemise, võimaldab lõplik implementatsioon toimivat peer-to-peer VPN-lahendust, 
+milles sõlmed konfigureeritakse lokaalselt.
 
-\section{Application Testing and Evaluation}
+\section{Rakenduse testimine ja hindamine}
 
-As the application is implemented in the Rust programming language, it must first be compiled before execution.
-The official \href{https://rust-lang.org/learn/get-started/}{Get Started page} provides installation instructions
-for the \href{https://en.wikipedia.org/wiki/Software_development_kit}{Rust SDK} on supported systems.
+Kuna rakendus on implementeeritud Rust programmeerimiskeeles, tuleb see enne käivitamist kompileerida.
+Ametlik \href{https://rust-lang.org/learn/get-started/}{Get Started leht} sisaldab paigaldusjuhiseid
+\href{https://en.wikipedia.org/wiki/Software_development_kit}{Rust SDK} jaoks toetatud süsteemidel.
 
-The application can be compiled by executing the command \texttt{cargo build}. The resulting executable is generated
-at \texttt{target/debug/petope}, which can then be launched from a command-line interface. Since the application creates
-and operates a TUN device, administrative privileges are required. On Linux systems, the executable should therefore
-be started using \texttt{sudo}, for example:
+Rakenduse saab kompileerida käsu \texttt{cargo build} käivitamisega. Tulemuseks olev käivitatav fail genereeritakse
+asukohas \texttt{target/debug/petope}, mida saab seejärel käivitada käsurealiidesest. Kuna rakendus loob
+ja kasutab TUN-seadet, on vajalikud administraatoriõigused. Linuxi süsteemides tuleks käivitatav fail seetõttu
+käivitada kasutades \texttt{sudo}, näiteks:
 \texttt{sudo ./target/debug/petope}.
 
-During the first execution, the application generates a \texttt{config.toml} configuration file and displays runtime
-information, as shown in the following figure:
+Esimesel käivitamisel genereerib rakendus konfiguratsioonifaili \texttt{config.toml} ning kuvab tööaja informatsiooni,
+nagu on näidatud järgneval joonisel:
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/first_run.jpg}
-  \caption{Application output during the initial execution, displaying the peer identifier, assigned IP addresses, and an empty peer list}
+  \caption{Rakenduse väljund esmakordsel käivitamisel, kuvades sõlme identifikaatori, määratud IP-aadressid ning tühja sõlmede loendi}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/first_run_config.jpg}
-  \caption{Contents of the generated \texttt{config.toml} file after the initial execution}
+  \caption{Genereeritud \texttt{config.toml} faili sisu pärast esmakordset käivitamist}
 \end{figure}
 
-The application displays the local peer identifier and the assigned IP addresses. The generated configuration file
-initially contains only a private key field, which ensures that the peer identity remains consistent across application restarts.
+Rakendus kuvab kohaliku sõlme identifikaatori ning määratud IP-aadressid. Genereeritud konfiguratsioonifail
+sisaldab algselt ainult privaatvõtme välja, mis tagab, et sõlme identiteet jääb rakenduse taaskäivituste vahel püsivaks.
 
-The application was then executed on a second computer in order to obtain its peer identifier and assigned addresses:
+Seejärel käivitati rakendus teises arvutis, et saada selle sõlme identifikaator ja määratud aadressid:
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/first_run_server.jpg}
-  \caption{Application running on the second computer}
+  \caption{Rakendus töötamas teises arvutis}
 \end{figure}
 
 \newpage
 
-After obtaining the identifiers and IP addresses of both peers, the peer configuration was updated accordingly:
+Pärast mõlema sõlme identifikaatorite ja IP-aadresside saamist uuendati vastavalt sõlmede konfiguratsiooni:
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/config_with_peer.jpg}
-  \caption{Updated \texttt{config.toml} file containing the peer configuration of the second computer}
+  \caption{Uuendatud \texttt{config.toml} fail, mis sisaldab teise arvuti sõlme konfiguratsiooni}
 \end{figure}
 
-The same procedure was repeated on the second computer using the identifier of the first peer.
-After restarting the application, the peer list correctly displayed the configured peer together with the corresponding IP addresses.
+Sama protseduuri korrati teises arvutis, kasutades esimese sõlme identifikaatorit.
+Pärast rakenduse taaskäivitamist kuvati sõlmede loendis korrektselt konfigureeritud sõlm koos vastavate IP-aadressidega.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/second_run.jpg}
-  \caption{Application output after configuring a remote peer}
+  \caption{Rakenduse väljund pärast kaugsõlme konfigureerimist}
 \end{figure}
 
-While the application was running, communication with the second computer could be established using the IP addresses
-provided by the application. Upon transmission of the first IP packet destined for the remote peer, the application
-resolved the peer identifier, established an initial connection through a
-\href{https://docs.iroh.computer/concepts/relays}{relay}, and subsequently negotiated a direct
-\href{https://en.wikipedia.org/wiki/Peer-to-peer}{peer-to-peer} connection. This behavior can be observed by sending ICMP echo requests:
+Rakenduse töötamise ajal oli võimalik luua ühendus teise arvutiga, kasutades rakenduse poolt määratud IP-aadresse.
+Esimese kaugsõlmele suunatud IP-paketi edastamisel lahendas rakendus sõlme identifikaatori, lõi esmase ühenduse läbi
+\href{https://docs.iroh.computer/concepts/relays}{relee} ning seejärel vahendas otsese
+\href{https://en.wikipedia.org/wiki/Peer-to-peer}{peer-to-peer} ühenduse. Sellist käitumist on võimalik jälgida ICMP kajapäringute saatmisel:
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{5/pinging.jpg}
-  \caption{ICMP echo requests transmitted using both IPv4 and IPv6 addresses assigned by the application}
+  \caption{ICMP kajapäringud, mis edastati rakenduse poolt määratud IPv4 ja IPv6 aadresside abil}
 \end{figure}
 
-The first packet exhibited a latency of approximately \emph{405 ms}, whereas subsequent packets required only approximately
-\emph{4 ms}. This demonstrates that the application was able to discover the remote peer and establish a direct connection
-within a short period of time, without requiring manual network configuration such as
-\href{https://en.wikipedia.org/wiki/Port_forwarding}{port forwarding}
-\footnote{The iroh library internally utilizes protocols such as
-  \href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP} and
-  \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP}
-  to automatically configure router port mappings when supported by the network environment.}.
+\newpage
 
-\subsection{Application Testing Using Minecraft}
+Esimese paketi latentsus oli ligikaudu \emph{405 ms}, samas kui järgnevad paketid vajasid ainult ligikaudu
+\emph{4 ms}. See demonstreerib, et rakendus suutis avastada kaugsõlme ning luua otsese ühenduse lühikese aja jooksul,
+ilma et oleks vaja käsitsi võrgukonfiguratsiooni, näiteks
+\href{https://en.wikipedia.org/wiki/Port_forwarding}{port forwarding}'ut
+\footnote{\texttt{iroh} teek kasutab sisemiselt protokolle nagu
+  \href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP} ja
+  \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP},
+  et automaatselt konfigureerida ruuteri pordisuunamisi juhul, kui võrgukeskkond seda toetab.}.
 
-To evaluate the application under a practical workload, multiplayer connectivity in
-\href{https://en.wikipedia.org/wiki/Minecraft}{Minecraft} was tested between two peers located in different countries.
-Initially, the peers were unable to establish a game connection despite successful ICMP communication.
+\subsection{Rakenduse testimine Minecrafti abil}
 
-The issue was traced to an incorrect implementation of the ICMP \texttt{Packet Too Big} message.
-According to the protocol specification, the message must include a portion of the original IP packet so that the operating system
-can identify the affected connection and apply appropriate fragmentation behavior. After modifying the implementation to include
-the original packet payload, stable multiplayer communication was successfully established.
+Rakenduse hindamiseks praktilise koormuse all testiti mitmikmängu ühenduvust
+\href{https://en.wikipedia.org/wiki/Minecraft}{Minecraftis} kahe erinevates riikides paikneva sõlme vahel.
+Esialgu ei suutnud sõlmed mänguühendust luua hoolimata edukast ICMP-side toimimisest.
+
+Probleemi põhjuseks osutus ICMP \texttt{Packet Too Big} sõnumi vigane implementatsioon.
+Protokolli spetsifikatsiooni kohaselt peab sõnum sisaldama osa algsest IP-paketist, et operatsioonisüsteem
+saaks tuvastada mõjutatud ühenduse ning rakendada sobivat fragmenteerimiskäitumist. Pärast implementatsiooni muutmist,
+et kaasata algse paketi kasulik koormus, saavutati edukalt stabiilne mitmikmängu ühendus.
 
 \phantomsection
-\section*{Summary}
-\addcontentsline{toc}{section}{Summary}
+\section*{Kokkuvõte}
+\addcontentsline{toc}{section}{Kokkuvõte}
 
-During this work, knowledge was acquired regarding techniques for establishing direct peer-to-peer connections between two computers,
-including scenarios in which both devices are located behind restrictive network environments such as home or office networks.
-The project provided an opportunity to study a field in which prior experience was limited and contributed to a significantly
-improved understanding of the underlying concepts and implementation approaches.
+Käesoleva töö käigus omandati teadmisi tehnikatest, mida kasutatakse otseste peer-to-peer ühenduste loomiseks kahe arvuti vahel,
+sealhulgas olukordades, kus mõlemad seadmed paiknevad piiravate võrgukeskkondade taga, näiteks kodu- või kontorivõrkudes.
+Projekt võimaldas uurida valdkonda, milles varasem kogemus oli piiratud, ning aitas oluliselt parandada arusaamist
+alusmõistetest ja implementatsioonimeetoditest.
 
-Following the research phase, experiments were conducted with the fundamental techniques required for establishing direct connections
-between computers on the Internet that are not ordinarily accessible. A custom-developed solution was implemented to investigate methods
-for discovering and establishing connections using arbitrary identifiers.
+Pärast uurimistöö etappi viidi läbi eksperimente fundamentaalsete tehnikatega, mis on vajalikud otseste ühenduste loomiseks
+Interneti kaudu arvutite vahel, mis ei ole tavapäraselt ligipääsetavad. Arendati kohandatud lahendus, et uurida meetodeid
+ühenduste avastamiseks ja loomiseks suvaliste identifikaatorite abil.
 
-After successful experimentation with the core techniques, a fully functional application was developed that can operate as a VPN solution by establishing
-direct connections between specified peers through the use of the \texttt{iroh} library. The library provides an identifier representing a public encryption key,
-which is additionally used for dynamic peer discovery and for determining potential connection paths across the Internet.
+Pärast edukat eksperimenteerimist põhitehnikatega arendati täielikult funktsionaalne rakendus, mis suudab toimida VPN-lahendusena,
+luues otseseid ühendusi määratud sõlmede vahel \texttt{iroh} teegi abil. Teek pakub identifikaatorit, mis esindab avalikku krüpteerimisvõtit,
+ning mida kasutatakse lisaks dünaamiliseks sõlmede avastamiseks ja võimalike ühendusteede määramiseks Internetis.
 
-The resulting application operates reliably in most tested scenarios and is designed with maintainability and clarity in mind through a straightforward codebase.
-The project demonstrates the practical applicability of the implemented approach even in its current state. Future work will focus on extending and improving
-the application for personal use and multiplayer gaming scenarios.
+Valminud rakendus töötab usaldusväärselt enamikes testitud olukordades ning on loodud hooldatavust ja selgust silmas pidades tänu lihtsale koodibaasile.
+Projekt demonstreerib implementeeritud lähenemise praktilist rakendatavust ka selle praeguses seisus. Tulevane töö keskendub rakenduse edasiarendamisele
+ja täiustamisele isiklikuks kasutuseks ning mitmikmängu stsenaariumide jaoks.
 
 \clearpage
 \section*{Summary}
