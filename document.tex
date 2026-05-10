@@ -1,38 +1,81 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper, 10pt]{article}
 
 \usepackage{hyperref}
 \usepackage{xurl}
 \usepackage{minted}
 \usepackage{graphicx}
 \graphicspath{ {./docassets} }
-\usepackage[margin=1in]{geometry} % reduce borders for pages
 \usepackage{float} % add `H` floating parameter so figures appear like I want
 \usepackage{tcolorbox}
 
 % reduce space between images and captions
 \usepackage{caption}
-\captionsetup{skip=5pt}
+\captionsetup{skip=8pt, belowskip=-8pt}
 
 \setminted{
-  linenos,
-  breaklines,
-  frame=lines,
-  framesep=2mm
+  % linenos,
+  % breaklines,
+  % frame=lines,
+  % framesep=2mm
 }
+
+% requirements for work formatting
+% 2.5cm edge for pages
+\usepackage[margin=2.5cm]{geometry}
+% use Helvetica as default font (unfortunately no required Verdana)
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+% line spacing of 1.5
+\usepackage{setspace}
+\onehalfspacing
+% paragraph spacing of 12 points
+\setlength{\parskip}{12pt}
+\setlength{\parindent}{0pt} % remove indent at the start of paragraph
+% place page numbers on the right
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % clear existing header/footer
+\fancyfoot[R]{\thepage} % put page number on the right
+\renewcommand{\headrulewidth}{0pt} % remove header line
+
+% format sections by the work format requirements
+\usepackage{titlesec}
+% section (14pt, uppercase, page break before, 12pt spacing)
+\titleformat{\section}
+  {\clearpage\bfseries\fontsize{14pt}{16pt}\selectfont}
+  {\thesection}{1em}{\MakeUppercase}
+\titlespacing*{\section}{0pt}{12pt}{12pt}
+% subsction (12pt, uppercase, 12pt spacing)
+\titleformat{\subsection}
+  {\bfseries\fontsize{12pt}{14pt}\selectfont}
+  {\thesubsection}{1em}{\MakeUppercase}
+\titlespacing*{\subsection}{0pt}{12pt}{12pt}
+% subsubsection (10pt, uppercase, 12pt spacing)
+\titleformat{\subsubsection}
+  {\bfseries\fontsize{10pt}{12pt}\selectfont}
+  {\thesubsubsection}{1em}{\MakeUppercase}
+\titlespacing*{\subsubsection}{0pt}{12pt}{12pt}
+
 
 \title{petope - a VPN development project}
 \author{Retro}
 \date{2026}
 
 \begin{document}
+
 \maketitle
 
-\newpage
+% Title page does not have numbering
+\thispagestyle{empty}
 
 
+
+\clearpage
 \tableofcontents
 
-\newpage
+% Page numbering starts from second page
+\setcounter{page}{1}
 
 
 \section*{Introduction}
@@ -77,9 +120,6 @@ So, after being amazed by how Tailscale works internally, I want to learn by
 creating my own VPN solution, learn from my mistakes and while developing everything needed,
 and maybe even create something for gamers around the world to use to play together.
 And I am totally okay if I won't be able to handle such project, I am sure I will learn a lot of stuff!
-
-\newpage
-
 
 \section{Researching existing solutions} \label{existingsolutions}
 
@@ -149,7 +189,6 @@ a library written in \href{https://rust-lang.org/}{Rust} that does P2P connectio
 and it just works. After researching this library, it points almost all checks for me, and I would totally use it
 for another project that would require such type of networking, or maybe even if it doesn't, just for fun ;)
 
-
 \section{Planning} \label{planning}
 
 First of all, I am certain that I won't be fully developing \emph{my own} protocol,
@@ -196,7 +235,6 @@ and \href{https://en.wikipedia.org/wiki/SHA-2}{SHA2} sound like a sane choice.
 And that's all I think for now, now it is finally time to do some programming!
 
 
-\newpage
 \section{Simple UDP server/client}
 
 As my starting point I choose to look into \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation about udp socket},
@@ -239,8 +277,6 @@ fn client() {
 }
 \end{minted}
 
-\newpage
-
 Aand I get this after running both server and the client:
 
 \begin{center}
@@ -280,8 +316,6 @@ Put this algorithm into a loop, which registers itself, finds target address and
 I wont add a source code to this document,
 so you can see an implementation of discovery server on commit
 \href{https://github.com/dankmolot/petope/tree/5a66b32a015f395bc614a1aedc54a87a44d8dbc1}{5a66b3}.
-
-\newpage
 
 Since right now discovery uses simple text udp protocol,
 I can test it via \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
@@ -332,7 +366,7 @@ Discovery server will be ran on my rented virtual server provided by Hetzner wit
 \end{figure}
 
 As you can see from the screenshots \ref{fig:udp_punch_pc} and \ref{fig:udp_punch_phone}
-connected to a discovery server with address \emph{91.107.213.38}
+connected to a discovery server with address \\ \emph{91.107.213.38}
 \footnote{my rented server with public address},
 notebook with address \emph{88.196.179.131} and phone with address \emph{46.131.76.184}.
 
@@ -551,7 +585,7 @@ loop {
 
 Function above will wait indefinetely until it will discover the node, return the address
 to which the code will connect afterwards. One important thing is that a service name in the service type
-(\textbf{\_name}.\_protocol.domain) can't be longer than 15 symbols.
+\\ (\textbf{\_name}.\_protocol.domain) can't be longer than 15 symbols.
 
 To my suprise it works pretty well, I expected that it would take seconds before a node could discover another node,
 but it all takes a fraction of a second. You can see the entire code at commit \href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
@@ -1205,7 +1239,7 @@ fully ready P2P VPN solution where each peer is locally configured.
 
 \section{Testing how it works}
 
-Because application was written in Rust language, it needs to be compiled first. 
+Because application was written in Rust language, it needs to be compiled first.
 On their \href{https://rust-lang.org/learn/get-started/}{"Get Started" page} there is a quick guide
 how to install \href{https://en.wikipedia.org/wiki/Software_development_kit}{Rust SDK} on your system.
 
@@ -1227,7 +1261,7 @@ After launching application first time, it will create a \texttt{config.toml} fi
 \end{figure}
 
 As you can see the application tells your id and IP addresses. Inside newly created config file there isn't a lot,
-only a private key field so the identity will stay consistent between application starts. 
+only a private key field so the identity will stay consistent between application starts.
 Let's run application on my second computer to get its identifier and make a connection later:
 
 \begin{figure}[H]
@@ -1243,7 +1277,7 @@ Now that I know IDs and IP addresses of both peers, I can add these IDs into con
   \caption{config.toml that now contains the peer of the second computer}
 \end{figure}
 
-And do the same thing on the second computer, but use peer ID of first computer of course. 
+And do the same thing on the second computer, but use peer ID of first computer of course.
 Now after running the application second time you can see that now it has a \emph{peer} in the list of peers
 with IP addresses that also match IP addresses that were shown on second computer.
 \begin{figure}[H]
@@ -1253,10 +1287,10 @@ with IP addresses that also match IP addresses that were shown on second compute
 \end{figure}
 
 Now while application runs I can connect to the second computer via IP address that was provided by the application,
-and the application will figure out how to connect to the other peer, and cache the connection. 
+and the application will figure out how to connect to the other peer, and cache the connection.
 After first IP packet destined to the peer, application will discover the peer by its ID, estabilish initial connection
 via a \href{https://docs.iroh.computer/concepts/relays}{relay} and then communicate with the peer to estabilish
-a \href{https://en.wikipedia.org/wiki/Peer-to-peer}{peer-to-peer} connection to communicate directly. 
+a \href{https://en.wikipedia.org/wiki/Peer-to-peer}{peer-to-peer} connection to communicate directly.
 You can see this behaviour if you try pinging the peer:
 \begin{figure}[H]
   \centering
@@ -1268,8 +1302,8 @@ As you can see first packet took \emph{405ms}, but next took only \emph{4ms}. Th
 application could discover second peer and connect to it directly in a moment, and all without any additional help
 like \href{https://en.wikipedia.org/wiki/Port_forwarding}{port forwarding}
 \footnote{iroh library actually uses protocols like \href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP}
-and \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP} to open ports on a router
-without specifying any rules beforehand.}.
+  and \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP} to open ports on a router
+  without specifying any rules beforehand.}.
 
 \subsection{Trying something more serious than pinging}
 
@@ -1282,7 +1316,6 @@ original IP packets as a payload to the messages we had absolutely no problem pl
 if we were in the same local network.
 
 
-\newpage
 \section*{Summary}
 \addcontentsline{toc}{section}{Summary}
 
@@ -1300,11 +1333,10 @@ as a VPN solution which establishes direct connections to defined peers by using
 Library provides an identifier that represent a public key used for encryption and also used to dynamically
 discover provided peers on the internet and find paths of possible connections to the peer.
 
-In the end the developed application works under most circumstances, robust and easy to understand due to clear and simple code. 
+In the end the developed application works under most circumstances, robust and easy to understand due to clear and simple code.
 I am certain that my work is already proves to be useful even in such basic state.
 In the future I plan to extend and improve the application for my personal use and to play together with my friends in games.
 
-\newpage
 \section*{Summary (võõrnekeelne)}
 \addcontentsline{toc}{section}{Summary (võõrnekeelne)}
 
@@ -1333,8 +1365,8 @@ a connection to peer and rouing of IP packets.
 In the end Retro has attained a valuable knowledge and developed an useful application.
 
 
-\newpage
 \section*{Sources}
+\addcontentsline{toc}{section}{Sources}
 \begin{itemize}
   \item \url{https://yggdrasil-network.github.io/implementation.html}
   \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}

@@ -21,6 +21,8 @@
               xurl # \url line breaking
               minted # for code highlighting
               tcolorbox # for blockquotes
+              helvetic # for Helvetica font
+              titlesec # For modifying titles
             ]
           )
         );
