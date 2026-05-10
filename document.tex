@@ -226,47 +226,38 @@ Juhendaja \theteacher \emph{<allkirjastatud digitaalselt>}
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
 
-When someone asks how can they connect to their server at home,
-for example on \href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit,
-I often see that \href{https://tailscale.com/}{Tailscale} is suggested.
+When discussing methods for connecting to a self-hosted server at home, for example on the 
+\href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit, \href{https://tailscale.com/}{Tailscale} is frequently recommended.
 
-Why you may ask? Well to connect to your own server is not as easy task as
-to connect normal public facing server.
-Most of home networks are behind NAT with periodically changing IPv4 address
-\href{https://en.wikipedia.org/wiki/IPv4_address_exhaustion}{since we don't have enough IPv4 addresses},
-and there are firewalls that prevent access from outside.
+This recommendation is understandable, because connecting to a private home server is generally more complex than connecting to a publicly accessible server. 
+In many home networks, devices are located behind NAT and assigned IPv4 addresses that may change periodically\footnote{This is partly due to IPv4 address exhaustion.}, 
+while firewalls often block incoming connections from outside the local network.
 
-In some cases you don't even have public IPv4 address,
-since ISP provided may use \href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}
-which makes connection from the internet impossible even if you use \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS}
-and open ports on your router.
+In some cases, a public IPv4 address is not available at all, because an internet service provider may use 
+\href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}. Under such conditions, external access to the network may remain unavailable 
+even when \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS} is used and the relevant ports are forwarded on the router.
 
-And most of these problems are solved by Tailscale!
-When you start a Tailscale application, it connects to a \href{https://tailscale.com/docs/concepts/control-data-planes}{control plane}
-which coordinates your Tailscale network (known as \href{https://tailscale.com/docs/concepts/tailnet}{tailnet}),
-tells you which devices are in it, their internal addresses, public key, manages access to each device
-and helps you with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal}
-so you can even connect directly to your server.
-Instead of classic VPN structure where you connect to relay server to access internal subnet
-you connect to each of your servers directly, thus cutting a middle man and an additional latency
-and single point of failure\footnote{there still a single point of failure, as tailnet is managed by control plane instead of relay server}.
-And since all clients in the network connect to each other directly,
-it is called a \href{https://en.wikipedia.org/wiki/Mesh_networking}{Mesh VPN}.
+Tailscale addresses many of these limitations. When the Tailscale client is started, it connects to a 
+\href{https://tailscale.com/docs/concepts/control-data-planes}{control plane} that manages the Tailscale network, known as a 
+\href{https://tailscale.com/docs/concepts/tailnet}{tailnet}. The control plane maintains information about the devices in the network, 
+including their internal addresses and public keys, manages access to each device, and assists with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal}, 
+which can enable direct connections to a server. Rather than using the traditional VPN model, 
+in which traffic passes through a relay server to reach an internal subnet, Tailscale connects devices directly. 
+This reduces the number of intermediaries and may lower latency and decrease dependence on a single relay point
+\footnote{A single point of failure still exists, since the tailnet is managed by the control plane rather than by a relay server.}.
+Because all clients in the network communicate directly with one another, this architecture is commonly described as a \href{https://en.wikipedia.org/wiki/Mesh_networking}{mesh VPN}.
 
-So, with Tailscale you just connect your device to your tailnet, and you can just to your other devices by an address.
-No need to add peers to each device, open ports, manage routing. Plug-n-play solution that just works.
+In practice, Tailscale allows a device to join a tailnet and then access other devices through their assigned addresses. 
+This reduces the need to configure peers on each device, open ports, or manually manage routing.
 
-Also it makes a great solution when you want to play with your friends together,
-but there is much simpler to use alternative named \href{https://www.radmin-vpn.com/}{Radmin VPN},
-which has somewhat similiar functionality, but it is proprietary which means individual user can't be sure
-how the program works and if it contains malicious code.
+The same approach can also be useful for multiplayer gaming with friends. 
+However, a simpler alternative in this context is \href{https://www.radmin-vpn.com/}{Radmin VPN}, which provides similar functionality.
+Since it is proprietary software, users cannot independently verify how it operates or determine whether it contains malicious code.
 
-So, after being amazed by how Tailscale works internally, I want to learn by
-creating my own VPN solution, learn from my mistakes and while developing everything needed,
-and maybe even create something for gamers around the world to use to play together.
-And I am totally okay if I won't be able to handle such project, I am sure I will learn a lot of stuff!
+Motivated by an interest in the internal design of Tailscale, this project aims to develop a VPN solution, identify implementation issues through practical experience,
+and potentially create a tool for gamers to use for online play. Even if the project does not reach full completion, it is expected to provide substantial practical learning value.
 
-\emph{ChatGPT was used to translate this document from English to Estonian. Original work was fully written in English.}
+\emph{ChatGPT was used to translate this document from English to Estonian. The original text was written entirely in English.}
 
 \section{Researching existing solutions} \label{existingsolutions}
 
