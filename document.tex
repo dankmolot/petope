@@ -392,8 +392,7 @@ are considered suitable choices for the implementation.
 
 \section{Simple UDP server/client}
 
-As my starting point I choose to look into \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation about udp socket},
-and wrote following code:
+As an initial step, the \href{https://doc.rust-lang.org/std/net/struct.UdpSocket.html}{Rust documentation for UDP sockets} was reviewed, and the following implementation was developed:
 
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -432,28 +431,30 @@ fn client() {
     );
 }
   \end{minted}
-  \caption{example code server and client built on top of UDP}
+  \caption{Example implementation of a UDP-based server and client}
 \end{figure}
 
 \newpage
 
-Aand I get this after running both server and the client:
+After executing both the server and the client applications, the following output was obtained:
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{1/server.png}
-  \caption{a screenshot which shows received message from a client}
+  \caption{Server output showing a message received from the client}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{1/client.png}
-  \caption{a screenshot which shows received reversed message from a server}
+  \caption{Client output showing the reversed message received from the server}
 \end{figure}
 
-As you can see, I got a message sent from a client to the server,
-and server replied with reversed message.
-Now it is time to do some discovery!
+The results demonstrate successful communication between the client and the server. 
+The client transmitted a message to the server, after which the server processed the received data by 
+reversing its contents and returning the modified message to the client.
+
+The next step is to investigate service discovery mechanisms.
 
 \section{Peer discovery}
 
