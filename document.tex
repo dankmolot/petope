@@ -116,10 +116,39 @@
 
 \begin{document}
 
-\maketitle
+\begin{center}
+  \Large
+  TALLINNA POLÜTEHNIKUM \\
+  IT ja telekommunikatsiooni erialaosakond
+
+  \vspace*{\fill}
+
+  \theauthor
+
+  {\huge DEVELOPING A P2P VPN APPLICATION}
+
+  Lõputöö
+
+  Tarkvaraarendaja \\
+  TA-22V
+
+  \vspace*{\fill}
+
+
+  \begin{flushright}
+    Juhendaja: \theteacher
+  \end{flushright}
+
+  \vspace{4em}
+
+  Tallinn 2026
+
+\end{center}
 \thispagestyle{empty}
 
 \section*{AUTORIDEKLARATSIOON}
+
+\vspace{3em}
 
 Deklareerin, et käesolev lõputöö, mis on minu iseseisva töö tulemus, on esitatud Tallinna
 Polütehnikumi lõputunnistuse taotlemiseks Tarkvaraarendaja erialal. Lõputöö alusel ei ole
@@ -199,6 +228,7 @@ Juhendaja \theteacher \emph{<allkirjastatud digitaalselt>}
   \item[Radmin VPN] A proprietary VPN application often used for gaming and remote access.
   \item[Relay server] An intermediate server that forwards traffic between devices.
   \item[Rust] A systems programming language focused on safety and performance.
+  \item[Software Development Kit (SDK)] A collection of software development tools in one installable package.
   \item[SecretKey] An iroh private-key type used to create or identify an endpoint.
   \item[Service discovery] A mechanism for automatically finding devices or services on a network.
   \item[SYN] A TCP synchronization flag used to start the connection handshake.
@@ -1473,8 +1503,8 @@ impl Peer {
   \caption{Complete packet transmission function for a peer}
 \end{figure}
 
-Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \texttt{conn.read\_datagram()}
-and forwarding the received packets to the TUN device using \texttt{to\_network\_tx.send(bytes)}.
+Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \\ \texttt{conn.read\_datagram()}
+and forwarding the received packets to the TUN device using \\ \texttt{to\_network\_tx.send(bytes)}.
 
 By integrating the previously described components, including configuration management,
 routing, peer communication, and packet handling, the resulting implementation provides
