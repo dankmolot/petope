@@ -121,8 +121,8 @@
 
 \section*{AUTORIDEKLARATSIOON}
 
-Deklareerin, et käesolev lõputöö, mis on minu iseseisva töö tulemus, on esitatud Tallinna 
-Polütehnikumi lõputunnistuse taotlemiseks Tarkvaraarendaja erialal. Lõputöö alusel ei ole 
+Deklareerin, et käesolev lõputöö, mis on minu iseseisva töö tulemus, on esitatud Tallinna
+Polütehnikumi lõputunnistuse taotlemiseks Tarkvaraarendaja erialal. Lõputöö alusel ei ole
 varem eriala lõputunnistust taotletud.
 
 \vspace{4em}
@@ -226,31 +226,31 @@ Juhendaja \theteacher \emph{<allkirjastatud digitaalselt>}
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
 
-When discussing methods for connecting to a self-hosted server at home, for example on the 
+When discussing methods for connecting to a self-hosted server at home, for example on the
 \href{https://www.reddit.com/r/selfhosted/}{r/selfhosted} subreddit, \href{https://tailscale.com/}{Tailscale} is frequently recommended.
 
-This recommendation is understandable, because connecting to a private home server is generally more complex than connecting to a publicly accessible server. 
-In many home networks, devices are located behind NAT and assigned IPv4 addresses that may change periodically\footnote{This is partly due to IPv4 address exhaustion.}, 
+This recommendation is understandable, because connecting to a private home server is generally more complex than connecting to a publicly accessible server.
+In many home networks, devices are located behind NAT and assigned IPv4 addresses that may change periodically\footnote{This is partly due to IPv4 address exhaustion.},
 while firewalls often block incoming connections from outside the local network.
 
-In some cases, a public IPv4 address is not available at all, because an internet service provider may use 
-\href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}. Under such conditions, external access to the network may remain unavailable 
+In some cases, a public IPv4 address is not available at all, because an internet service provider may use
+\href{https://en.wikipedia.org/wiki/Carrier-grade_NAT}{CGNAT}. Under such conditions, external access to the network may remain unavailable
 even when \href{https://en.wikipedia.org/wiki/Dynamic_DNS}{Dynamic DNS} is used and the relevant ports are forwarded on the router.
 
-Tailscale addresses many of these limitations. When the Tailscale client is started, it connects to a 
-\href{https://tailscale.com/docs/concepts/control-data-planes}{control plane} that manages the Tailscale network, known as a 
-\href{https://tailscale.com/docs/concepts/tailnet}{tailnet}. The control plane maintains information about the devices in the network, 
-including their internal addresses and public keys, manages access to each device, and assists with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal}, 
-which can enable direct connections to a server. Rather than using the traditional VPN model, 
-in which traffic passes through a relay server to reach an internal subnet, Tailscale connects devices directly. 
+Tailscale addresses many of these limitations. When the Tailscale client is started, it connects to a
+\href{https://tailscale.com/docs/concepts/control-data-planes}{control plane} that manages the Tailscale network, known as a
+\href{https://tailscale.com/docs/concepts/tailnet}{tailnet}. The control plane maintains information about the devices in the network,
+including their internal addresses and public keys, manages access to each device, and assists with \href{https://tailscale.com/blog/how-nat-traversal-works}{NAT traversal},
+which can enable direct connections to a server. Rather than using the traditional VPN model,
+in which traffic passes through a relay server to reach an internal subnet, Tailscale connects devices directly.
 This reduces the number of intermediaries and may lower latency and decrease dependence on a single relay point
 \footnote{A single point of failure still exists, since the tailnet is managed by the control plane rather than by a relay server.}.
 Because all clients in the network communicate directly with one another, this architecture is commonly described as a \href{https://en.wikipedia.org/wiki/Mesh_networking}{mesh VPN}.
 
-In practice, Tailscale allows a device to join a tailnet and then access other devices through their assigned addresses. 
+In practice, Tailscale allows a device to join a tailnet and then access other devices through their assigned addresses.
 This reduces the need to configure peers on each device, open ports, or manually manage routing.
 
-The same approach can also be useful for multiplayer gaming with friends. 
+The same approach can also be useful for multiplayer gaming with friends.
 However, a simpler alternative in this context is \href{https://www.radmin-vpn.com/}{Radmin VPN}, which provides similar functionality.
 Since it is proprietary software, users cannot independently verify how it operates or determine whether it contains malicious code.
 
@@ -450,8 +450,8 @@ After executing both the server and the client applications, the following outpu
   \caption{Client output showing the reversed message received from the server}
 \end{figure}
 
-The results demonstrate successful communication between the client and the server. 
-The client transmitted a message to the server, after which the server processed the received data by 
+The results demonstrate successful communication between the client and the server.
+The client transmitted a message to the server, after which the server processed the received data by
 reversing its contents and returning the modified message to the client.
 
 The next step is to investigate service discovery mechanisms.
@@ -522,13 +522,13 @@ it provides the necessary foundation for UDP hole punching.
 
 \section{UDP hole punching}
 
-To evaluate UDP hole punching functionality, a dedicated public server was used to host a 
+To evaluate UDP hole punching functionality, a dedicated public server was used to host a
 \emph{discovery} service, while two nodes were deployed on separate networks.
 
-The first node was executed on a notebook computer connected to a residential home network. 
-The second node was executed on a mobile phone with \href{https://termux.dev/en/}{Termux} installed 
-and connected to the Telia mobile network. 
-The discovery server was hosted on a rented virtual private server 
+The first node was executed on a notebook computer connected to a residential home network.
+The second node was executed on a mobile phone with \href{https://termux.dev/en/}{Termux} installed
+and connected to the Telia mobile network.
+The discovery server was hosted on a rented virtual private server
 provided by \href{https://www.hetzner.com/}{Hetzner}, configured with a static public IPv4 address.
 
 \begin{figure}[H]
@@ -545,16 +545,16 @@ provided by \href{https://www.hetzner.com/}{Hetzner}, configured with a static p
   \label{fig:udp_punch_phone}
 \end{figure}
 
-Figures \ref{fig:udp_punch_pc} and \ref{fig:udp_punch_phone} illustrate successful communication 
+Figures \ref{fig:udp_punch_pc} and \ref{fig:udp_punch_phone} illustrate successful communication
 between the two nodes through the discovery server located at address \emph{91.107.213.38}
-\footnote{Public IPv4 address of the rented virtual server}. 
-The notebook used the public address \emph{88.196.179.131}, 
+\footnote{Public IPv4 address of the rented virtual server}.
+The notebook used the public address \emph{88.196.179.131},
 while the phone used the public address \emph{46.131.76.184}.
 
-Both nodes first registered their public endpoint information with the discovery server 
-and subsequently retrieved the endpoint information of the remote peer. 
-After each node transmitted an initial UDP packet to the other, the corresponding NAT devices permitted 
-incoming traffic associated with the established mappings. As a result, the phone successfully received a message 
+Both nodes first registered their public endpoint information with the discovery server
+and subsequently retrieved the endpoint information of the remote peer.
+After each node transmitted an initial UDP packet to the other, the corresponding NAT devices permitted
+incoming traffic associated with the established mappings. As a result, the phone successfully received a message
 from the notebook, after which the notebook received a reply from the phone.
 
 \newpage
@@ -562,41 +562,41 @@ from the notebook, after which the notebook received a reply from the phone.
 \subsection{Observed limitations}
 
 Initial experiments were conducted with both nodes connected to the same residential Wi-Fi network.
- Under these conditions, incoming packets were not successfully delivered between the nodes. 
- This behavior is likely related to router-specific NAT handling or limitations in local packet forwarding mechanisms. 
- Consequently, alternative peer discovery and communication mechanisms are required for nodes operating within the same local network.
+Under these conditions, incoming packets were not successfully delivered between the nodes.
+This behavior is likely related to router-specific NAT handling or limitations in local packet forwarding mechanisms.
+Consequently, alternative peer discovery and communication mechanisms are required for nodes operating within the same local network.
 
-One possible solution is the use of \href{https://en.wikipedia.org/wiki/Zero-configuration_networking}{Zeroconf} technologies, 
-which enable automatic service advertisement and discovery within local networks. 
+One possible solution is the use of \href{https://en.wikipedia.org/wiki/Zero-configuration_networking}{Zeroconf} technologies,
+which enable automatic service advertisement and discovery within local networks.
 Such mechanisms allow nodes located in the same network to establish communication without relying on an external discovery server.
 
 The \href{https://docs.iroh.computer/connecting/local-discovery}{Iroh} framework, for example, implements an mDNS-like local discovery mechanism that can be enabled when required.
 
 Another potential limitation arises when both nodes are located in different networks but operate behind the same CGNAT infrastructure
-\footnote{Devices share the same public IPv4 address while maintaining different internal private addresses}. 
+\footnote{Devices share the same public IPv4 address while maintaining different internal private addresses}.
 In this scenario, the discovery server cannot determine the internal addresses assigned within the CGNAT environment, which may prevent successful peer-to-peer connectivity.
 
 \section{TCP hole punching}
 
-\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} operates similarly to UDP hole punching. 
-In principle, it is sufficient for both peers to send a \texttt{SYN} packet to each other's network addresses, 
+\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} operates similarly to UDP hole punching.
+In principle, it is sufficient for both peers to send a \texttt{SYN} packet to each other's network addresses,
 after which subsequent packets may traverse the NAT device successfully.
 
-The primary challenge lies in implementing this behavior programmatically. 
-Most standard networking libraries support TCP sockets operating either in \emph{connect} mode or \emph{listen} mode, 
+The primary challenge lies in implementing this behavior programmatically.
+Most standard networking libraries support TCP sockets operating either in \emph{connect} mode or \emph{listen} mode,
 while the \emph{connect} mode typically permits communication with only a single remote endpoint.
 
-The \href{https://crates.io/crates/socket2}{socket2} Rust library provides access to operating system specific APIs 
-that allow TCP sockets to be reused across multiple destination addresses while preserving the same local port configuration. 
+The \href{https://crates.io/crates/socket2}{socket2} Rust library provides access to operating system specific APIs
+that allow TCP sockets to be reused across multiple destination addresses while preserving the same local port configuration.
 This functionality can be employed to experimentally evaluate TCP hole punching behavior.
 
 \subsection{Reusing the same socket}
 
-Attempting to create multiple \href{https://en.wikipedia.org/wiki/Network_socket}{sockets} bound to the same local address 
-normally results in an ``Address already in use'' error. Modern operating systems commonly provide the \texttt{SO\_REUSEPORT} socket option, 
+Attempting to create multiple \href{https://en.wikipedia.org/wiki/Network_socket}{sockets} bound to the same local address
+normally results in an ``Address already in use'' error. Modern operating systems commonly provide the \texttt{SO\_REUSEPORT} socket option,
 which allows multiple sockets to share the same local address and port combination.
 
-Using this mechanism, a node may first establish a connection to a discovery server in order to obtain a local address assignment. 
+Using this mechanism, a node may first establish a connection to a discovery server in order to obtain a local address assignment.
 Subsequently, additional sockets may reuse the same local address and port when attempting peer-to-peer communication.
 
 An example implementation using the \href{https://crates.io/crates/socket2}{socket2} library is shown below:
@@ -630,40 +630,40 @@ fn main() {
   \caption{Example usage of the \texttt{socket2} library for creating reusable sockets}
 \end{figure}
 
-Without the \mintinline{rust}|Socket::set_reuse_port(true)| call, the example fails with an ``Address already in use'' error. 
+Without the \mintinline{rust}|Socket::set_reuse_port(true)| call, the example fails with an ``Address already in use'' error.
 This behavior can be reproduced by replacing \texttt{true} with \texttt{false}.
 
 \subsection{First attempt}
 
-Migrating the discovery server implementation from UDP to TCP required relatively minor modifications. 
+Migrating the discovery server implementation from UDP to TCP required relatively minor modifications.
 In particular, a dedicated thread was introduced for each incoming connection in order to prevent premature socket termination.
 
-The peer node implementation introduced additional complexity. 
-Unlike UDP communication, TCP requires an established connection before data transmission can occur. 
+The peer node implementation introduced additional complexity.
+Unlike UDP communication, TCP requires an established connection before data transmission can occur.
 Consequently, a node must either initiate a connection attempt to another peer or transition into a \emph{listen} state while awaiting incoming connections.
 
-The initial implementation, corresponding to commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3}, 
-operated successfully in a localhost environment where both nodes communicated through the \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface. 
-However, experiments involving separate physical devices were unsuccessful. 
+The initial implementation, corresponding to commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3},
+operated successfully in a localhost environment where both nodes communicated through the \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface.
+However, experiments involving separate physical devices were unsuccessful.
 This result suggested that connection establishment and listening operations would need to occur concurrently, which proved difficult to implement using synchronous Rust code.
 
-To address this limitation, the \href{https://tokio.rs/}{Tokio} asynchronous runtime was introduced. 
+To address this limitation, the \href{https://tokio.rs/}{Tokio} asynchronous runtime was introduced.
 Tokio enables concurrent execution of connection attempts and listener tasks within the same application context.
 
 \subsection{Second attempt}
 
-The second implementation was developed following the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial}, 
-which presents examples based on the \href{https://github.com/tokio-rs/mini-redis/}{mini-redis} project. 
+The second implementation was developed following the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial},
+which presents examples based on the \href{https://github.com/tokio-rs/mini-redis/}{mini-redis} project.
 The tutorial provided a structured approach for implementing asynchronous communication and protocol handling.
 
-A simple \href{https://en.wikipedia.org/wiki/Frame_(networking)}{framing} mechanism was implemented, 
+A simple \href{https://en.wikipedia.org/wiki/Frame_(networking)}{framing} mechanism was implemented,
 enabling the use of Rust enumerations for structured input and output message handling.
 
-Both the discovery server and node implementations were rewritten to use asynchronous Tokio TCP sockets. 
-In the revised design, each node launches a TCP listener in the background during initialization, registers itself with the discovery server once, 
+Both the discovery server and node implementations were rewritten to use asynchronous Tokio TCP sockets.
+In the revised design, each node launches a TCP listener in the background during initialization, registers itself with the discovery server once,
 and then repeatedly attempts to establish a connection with another node.
 
-This implementation successfully established peer-to-peer TCP communication across different networks. 
+This implementation successfully established peer-to-peer TCP communication across different networks.
 The experimental setup consisted of one node operating on a notebook connected to a residential Wi-Fi network and another node operating on a mobile device connected through a cellular network.
 
 \newpage
@@ -682,24 +682,24 @@ The experimental setup consisted of one node operating on a notebook connected t
   \label{fig:tcp_punch_phone}
 \end{figure}
 
-The nodes successfully established bidirectional communication and exchanged identification messages of the form \texttt{"yo, i am <node name>"}. 
+The nodes successfully established bidirectional communication and exchanged identification messages of the form \texttt{"yo, i am <node name>"}.
 The observed behavior indicated that the connection was established directly between peers rather than through the TCP listener.
 
-Equivalent functionality could likely have been implemented using only the Rust standard library in combination with \emph{socket2}, however, 
-the adoption of Tokio simplified concurrent networking tasks and introduced established asynchronous programming practices. 
+Equivalent functionality could likely have been implemented using only the Rust standard library in combination with \emph{socket2}, however,
+the adoption of Tokio simplified concurrent networking tasks and introduced established asynchronous programming practices.
 The implementation corresponding to this experiment is available under commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
 
 \subsection{Nodes behind the same NAT}
 
-Nodes located behind the same NAT device were still unable to establish direct communication. 
-This behavior was expected because peers attempted to connect using their public IP addresses. 
-When packets addressed to the public IP re-enter the router from the internal network, 
+Nodes located behind the same NAT device were still unable to establish direct communication.
+This behavior was expected because peers attempted to connect using their public IP addresses.
+When packets addressed to the public IP re-enter the router from the internal network,
 the router may be unable to determine the appropriate internal destination and therefore discard the packets.
 
-The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback}) 
-feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality 
-according to the vendor documentation \href{https://www.asus.com/support/faq/1043024/}{provided by ASUS}. However, the observed behavior did not fully match the expected functionality. 
-In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum discussion}, 
+The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback})
+feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality
+according to the vendor documentation \href{https://www.asus.com/support/faq/1043024/}{provided by ASUS}. However, the observed behavior did not fully match the expected functionality.
+In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum discussion},
 the user \texttt{ColinTaylor} notes that NAT loopback support may depend on explicit port forwarding configuration, which this implementation intentionally avoids.
 
 This limitation motivates the discussion presented in the following section.
@@ -827,8 +827,8 @@ Figure~\ref{fig:network_pipeline} illustrates the packet routing pipeline implem
 
 The
 \href{https://en.wikipedia.org/wiki/Public-key_cryptography}{cryptographic key pair}
-serves not only as a security mechanism but also as the identity of a peer. 
-The public key is used both for peer discovery and for establishing connections. 
+serves not only as a security mechanism but also as the identity of a peer.
+The public key is used both for peer discovery and for establishing connections.
 Consequently, the private key must be persisted so that the application maintains a stable identifier across executions and can reliably connect to previously known peers.
 
 For simplicity, both the private key and peer identifiers are stored in a single configuration file.
@@ -863,8 +863,8 @@ fn main() {
   \caption{Argument parsing for selecting a configuration file}
 \end{figure}
 
-This implementation enables the use of either the \texttt{-c} or \texttt{--config} argument, for example \texttt{-c config2.toml}, 
-to load an alternative configuration file. By default, the application loads \texttt{config.toml}. 
+This implementation enables the use of either the \texttt{-c} or \texttt{--config} argument, for example \texttt{-c config2.toml},
+to load an alternative configuration file. By default, the application loads \texttt{config.toml}.
 The \texttt{clap} library additionally provides automatically generated help messages and error handling.
 
 \newpage
@@ -974,7 +974,7 @@ impl Peer {
 
 \newpage
 
-Finally, the \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions are combined into a single loading function, 
+Finally, the \texttt{Config::parse} and \texttt{get\_or\_generate\_secret\_key} functions are combined into a single loading function,
 which is invoked during application initialization.
 
 \begin{figure}[H]
@@ -1006,7 +1006,7 @@ fn main() -> Result<()> {
   \caption{Configuration loading function}
 \end{figure}
 
-This design enables the application to maintain its own private key while storing the public identifiers of remote peers. 
+This design enables the application to maintain its own private key while storing the public identifiers of remote peers.
 Although the implementation introduces additional complexity, it preserves flexibility for future extensions of the configuration system.
 
 \subsection{TUN device} \label{sec:apptun}
@@ -1095,7 +1095,7 @@ A larger MTU may reduce fragmentation overhead in future iterations of the syste
 At this stage, the TUN device only contains locally assigned IP addresses. However, the operating system routing table must also contain routes for peer addresses
 (see Section~\ref{sec:apppeers}) so that packets destined for peers are forwarded through the TUN interface.
 
-To manage routing entries, the \href{https://crates.io/crates/net-route}{\texttt{net-route}} library was used because it provides cross-platform route manipulation support. 
+To manage routing entries, the \href{https://crates.io/crates/net-route}{\texttt{net-route}} library was used because it provides cross-platform route manipulation support.
 The following example demonstrates how to add an IPv4 route associated with the TUN device:
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -1115,17 +1115,17 @@ handle.add(&route).await.unwrap(); // add route above to the routing table
   \caption{Example of adding a route using the \texttt{net-route} library}
 \end{figure}
 
-After the route is added, packets addressed to the specified destination are forwarded through the TUN interface, 
+After the route is added, packets addressed to the specified destination are forwarded through the TUN interface,
 allowing the application to process them.
 
 \subsection{Router} \label{sec:approuter}
 
-The router component is responsible for transmitting and receiving IP packets. 
+The router component is responsible for transmitting and receiving IP packets.
 Consequently, an efficient mechanism for transferring packet data between asynchronous tasks is required.
 
 \href{https://en.wikipedia.org/wiki/Channel_(programming)}{Channels} are commonly used for communication between threads and asynchronous tasks.
 Tokio provides the \href{https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html}{\texttt{tokio::sync::mpsc}}
-module for this purpose. However, standard queue-based channels preserve older messages until they are processed, thereby prioritizing earlier packets over more recent ones. 
+module for this purpose. However, standard queue-based channels preserve older messages until they are processed, thereby prioritizing earlier packets over more recent ones.
 Such behavior may negatively affect latency-sensitive workloads, including
 \href{https://en.wikipedia.org/wiki/Real-time_communication}{real-time communication} systems.
 
@@ -1473,11 +1473,11 @@ impl Peer {
   \caption{Complete packet transmission function for a peer}
 \end{figure}
 
-Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \texttt{conn.read\_datagram()} 
+Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \texttt{conn.read\_datagram()}
 and forwarding the received packets to the TUN device using \texttt{to\_network\_tx.send(bytes)}.
 
-By integrating the previously described components, including configuration management, 
-routing, peer communication, and packet handling, the resulting implementation provides 
+By integrating the previously described components, including configuration management,
+routing, peer communication, and packet handling, the resulting implementation provides
 a functional peer-to-peer VPN solution in which peers are configured locally.
 
 \section{Application Testing and Evaluation}
@@ -1551,9 +1551,9 @@ The first packet exhibited a latency of approximately \emph{405 ms}, whereas sub
 within a short period of time, without requiring manual network configuration such as
 \href{https://en.wikipedia.org/wiki/Port_forwarding}{port forwarding}
 \footnote{The iroh library internally utilizes protocols such as
-\href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP} and
-\href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP}
-to automatically configure router port mappings when supported by the network environment.}.
+  \href{https://en.wikipedia.org/wiki/Universal_Plug_and_Play}{UPnP} and
+  \href{https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol}{NAT-PMP}
+  to automatically configure router port mappings when supported by the network environment.}.
 
 \subsection{Application Testing Using Minecraft}
 
@@ -1571,23 +1571,22 @@ the original packet payload, stable multiplayer communication was successfully e
 \section*{Summary}
 \addcontentsline{toc}{section}{Summary}
 
-During this I was attaining valuable knowledge of how different techniques work to establish direct connections
-between two computers (or peer-to-peer) even behind closed to the internet networks like home and office networks.
-Thanks to this work I researched a field about which previously I had very basic understanding and now I am
-more confident in building similar systems.
+During this work, knowledge was acquired regarding techniques for establishing direct peer-to-peer connections between two computers,
+including scenarios in which both devices are located behind restrictive network environments such as home or office networks.
+The project provided an opportunity to study a field in which prior experience was limited and contributed to a significantly
+improved understanding of the underlying concepts and implementation approaches.
 
-After the research I have experimented with core techniques of establishing direct connection between two computers
-on the internet that are unaccesible under normal circumstances, while using a custom made solution to be able
-to discover how connection could be made using an arbitrary identifier.
+Following the research phase, experiments were conducted with the fundamental techniques required for establishing direct connections
+between computers on the Internet that are not ordinarily accessible. A custom-developed solution was implemented to investigate methods
+for discovering and establishing connections using arbitrary identifiers.
 
-After successful experiments with core techniques, I have fully developed an application can be used
-as a VPN solution which establishes direct connections to defined peers by using \texttt{iroh} library.
-Library provides an identifier that represent a public key used for encryption and also used to dynamically
-discover provided peers on the internet and find paths of possible connections to the peer.
+After successful experimentation with the core techniques, a fully functional application was developed that can operate as a VPN solution by establishing
+direct connections between specified peers through the use of the \texttt{iroh} library. The library provides an identifier representing a public encryption key,
+which is additionally used for dynamic peer discovery and for determining potential connection paths across the Internet.
 
-In the end the developed application works under most circumstances, robust and easy to understand due to clear and simple code.
-I am certain that my work is already proves to be useful even in such basic state.
-In the future I plan to extend and improve the application for my personal use and to play together with my friends in games.
+The resulting application operates reliably in most tested scenarios and is designed with maintainability and clarity in mind through a straightforward codebase.
+The project demonstrates the practical applicability of the implemented approach even in its current state. Future work will focus on extending and improving
+the application for personal use and multiplayer gaming scenarios.
 
 \phantomsection
 \section*{Summary (võõrnekeelne)}
@@ -1616,17 +1615,6 @@ is able to communicate with other peer via uniquely generated IP addresses while
 a connection to peer and rouing of IP packets.
 
 In the end \theauthor has attained a valuable knowledge and developed an useful application.
-
-
-% \phantomsection
-% \section*{Sources}
-% \addcontentsline{toc}{section}{Sources}
-% \begin{itemize}
-%   \item \url{https://yggdrasil-network.github.io/implementation.html}
-%   \item \url{https://yggdrasil-network.github.io/2018/08/19/congestion-control.html}
-%   \item \url{https://yggdrasil-network.github.io/2018/07/13/about-mtu.html}
-%   \item \url{https://yggdrasil-network.github.io/2023/10/22/upcoming-v05-release.html}
-% \end{itemize}
 
 
 \end{document}
