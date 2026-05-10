@@ -827,7 +827,7 @@ technique which allows to tell the system that "Hey! That packet is too big, ple
 Potentially in future iterations huge MTU can allow to optimize network pipeline even more since less fragmention
 means less data needs to be sent and less CPU usage for fragmenting will be needed.
 
-\subsection{Adding more routes}
+\subsubsection{Adding more routes}
 Currently TUN device only has specified local IP addresses, but operating system should know that IP addresses of our peers
 (see section~\ref{sec:apppeers}) should be routed through our TUN device, otherwise application wouldn't be able to receive packets destined to peers.
 
