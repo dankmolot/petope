@@ -578,27 +578,29 @@ In this scenario, the discovery server cannot determine the internal addresses a
 
 \section{TCP hole punching}
 
-\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} on the paper works
-similarly to the UDP hole punching, we just need to send a \texttt{SYN} request from both ends
-to the nodes addresses, and next packets should go through the NAT.
+\href{https://en.wikipedia.org/wiki/TCP_hole_punching}{TCP hole punching} operates similarly to UDP hole punching. 
+In principle, it is sufficient for both peers to send a \texttt{SYN} packet to each other's network addresses, 
+after which subsequent packets may traverse the NAT device successfully.
 
-The problem is implementing the connection via code, most standard libraries only allow
-to TCP socket operate in "connect" or "listen" mode, and "connect" mode only allows to
-send packets to \emph{one} destination address.
+The primary challenge lies in implementing this behavior programmatically. 
+Most standard networking libraries support TCP sockets operating either in \emph{connect} mode or \emph{listen} mode, 
+while the \emph{connect} mode typically permits communication with only a single remote endpoint.
 
-Luckily, there is a \href{https://crates.io/crates/socket2}{socket2} Rust library
-which have OS-dependent API calls to create TCP sockets which could be reused for multiple
-destination addresses with same local port, \emph{in theory}. Let's experiment!
+The \href{https://crates.io/crates/socket2}{socket2} Rust library provides access to operating system specific APIs 
+that allow TCP sockets to be reused across multiple destination addresses while preserving the same local port configuration. 
+This functionality can be employed to experimentally evaluate TCP hole punching behavior.
 
-\subsection{Trying to reuse same socket}
-If you are going to try to create two different \href{https://en.wikipedia.org/wiki/Network_socket}{sockets}
-with the same local address, operating system will give a "Address already in use" error.
-Thankfully most modern operating systems have an option called \texttt{SO\_REUSEPORT} for a socket
-which will allow to have multiple sockets on the same local address. This way we can connect
-to a discovery server, register our node id, and then try to connect to another node by reusing
-same local address and port.
+\subsection{Reusing the same socket}
 
-Simple example of using \href{https://crates.io/crates/socket2}{socket2} library:
+Attempting to create multiple \href{https://en.wikipedia.org/wiki/Network_socket}{sockets} bound to the same local address 
+normally results in an ``Address already in use'' error. Modern operating systems commonly provide the \texttt{SO\_REUSEPORT} socket option, 
+which allows multiple sockets to share the same local address and port combination.
+
+Using this mechanism, a node may first establish a connection to a discovery server in order to obtain a local address assignment. 
+Subsequently, additional sockets may reuse the same local address and port when attempting peer-to-peer communication.
+
+An example implementation using the \href{https://crates.io/crates/socket2}{socket2} library is shown below:
+
 \begin{figure}[H]
   \begin{minted}{rust}
 use std::io;
@@ -625,79 +627,82 @@ fn main() {
     second_socket.listen(128).unwrap(); // run socket in listen mode
 }
   \end{minted}
-  \caption{an example of using \texttt{socket2} library to create reusable socket}
+  \caption{Example usage of the \texttt{socket2} library for creating reusable sockets}
 \end{figure}
 
-Without \mintinline{rust}|Socket::set_reuse_port(true)|, this code would fail with an
-"Address already in use" error, which you can try to reproduce by changing \texttt{true} to \texttt{false}.
+Without the \mintinline{rust}|Socket::set_reuse_port(true)| call, the example fails with an ``Address already in use'' error. 
+This behavior can be reproduced by replacing \texttt{true} with \texttt{false}.
 
 \subsection{First attempt}
-Rewriting discovery server to TCP was a pretty simple task, I was forced to open a new thread for
-each new connection so it won't be closed immediately, but nothing hard.
 
-Actual hard part was to rewrite a node code, since I can't now carelessly send packets there and
-try to receive some, now I need to establish a connection first. But I won't be able to do it since
-there is nothing to connect to. So first node tries to connect to another node, or then goes into a
-\emph{listen} mode which just waits to receive a message.
+Migrating the discovery server implementation from UDP to TCP required relatively minor modifications. 
+In particular, a dedicated thread was introduced for each incoming connection in order to prevent premature socket termination.
 
-First attempt under commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3} was
-successful in localhost (both nodes in the same \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface),
-but running it on different machines went unsuccessful. I suppose I would need to do a connection + listen
-simualtounesly, which currently with synchronous Rust code is hard.
+The peer node implementation introduced additional complexity. 
+Unlike UDP communication, TCP requires an established connection before data transmission can occur. 
+Consequently, a node must either initiate a connection attempt to another peer or transition into a \emph{listen} state while awaiting incoming connections.
 
-It is time for \href{https://tokio.rs/}{Tokio} library, which brings asynchronous runtime
-which in turn will allow me to "easily"\footnote{asynchronous Rust is pretty hard by itself,
-  which is why I have avoided it until now.} run both connection attempts and listen for incoming messages.
+The initial implementation, corresponding to commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3}, 
+operated successfully in a localhost environment where both nodes communicated through the \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface. 
+However, experiments involving separate physical devices were unsuccessful. 
+This result suggested that connection establishment and listening operations would need to occur concurrently, which proved difficult to implement using synchronous Rust code.
+
+To address this limitation, the \href{https://tokio.rs/}{Tokio} asynchronous runtime was introduced. 
+Tokio enables concurrent execution of connection attempts and listener tasks within the same application context.
 
 \subsection{Second attempt}
-This time I have went through the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial}
-where they have showed examples based on building an application based on \href{https://github.com/tokio-rs/mini-redis/}{mini-redis}
-library which was a great example of how to build a communication. So I have built a basic
-\href{https://en.wikipedia.org/wiki/Frame_(networking)}{"framing"} which allowed me to use
-simple enums to handle input and output data with ease.
 
-Both discovery server and node code was rewritten to use asynchronous Tokio TCP sockets,
-and the main thing that was changed is that now during the start a TCP listener works
-on a background, a node registers itself only during the start, and then repeadetly
-tries to make a connection to another node. And suprsingly this time it has worked!
+The second implementation was developed following the \href{https://tokio.rs/tokio/tutorial}{Tokio tutorial}, 
+which presents examples based on the \href{https://github.com/tokio-rs/mini-redis/}{mini-redis} project. 
+The tutorial provided a structured approach for implementing asynchronous communication and protocol handling.
 
-So less talking and more showing. Setup is the same, one node on my notebook with a home WiFi,
-and another one is my phone connected to a mobile network.
+A simple \href{https://en.wikipedia.org/wiki/Frame_(networking)}{framing} mechanism was implemented, 
+enabling the use of Rust enumerations for structured input and output message handling.
+
+Both the discovery server and node implementations were rewritten to use asynchronous Tokio TCP sockets. 
+In the revised design, each node launches a TCP listener in the background during initialization, registers itself with the discovery server once, 
+and then repeatedly attempts to establish a connection with another node.
+
+This implementation successfully established peer-to-peer TCP communication across different networks. 
+The experimental setup consisted of one node operating on a notebook connected to a residential Wi-Fi network and another node operating on a mobile device connected through a cellular network.
 
 \newpage
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{4/node_notebook.png}
-  \caption{notebook searches for the phone and then successfully connects to it}
+  \caption{The notebook node searching for and successfully connecting to the mobile node}
   \label{fig:tcp_punch_notebook}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{4/node_phone.png}
-  \caption{and the phone successfully connects to the notebook from the first try}
+  \caption{The mobile node successfully connecting to the notebook node}
   \label{fig:tcp_punch_phone}
 \end{figure}
 
-As you can see they have both connected to each other (interestingly enough not through TCP listener),
-and sent a message to each other in style \texttt{"yo, i am <node name>"}. I am somewhat certain that I could
-archieve similar results with \emph{standard library + socket2} library, but I still learned good practices
-from reading the Tokio tutorial and trying to replicate it with my code.
-You can try the code on commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
+The nodes successfully established bidirectional communication and exchanged identification messages of the form \texttt{"yo, i am <node name>"}. 
+The observed behavior indicated that the connection was established directly between peers rather than through the TCP listener.
 
-\subsection{About the same NAT}
+Equivalent functionality could likely have been implemented using only the Rust standard library in combination with \emph{socket2}, however, 
+the adoption of Tokio simplified concurrent networking tasks and introduced established asynchronous programming practices. 
+The implementation corresponding to this experiment is available under commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
 
-Nodes that are behind the same NAT still can't connect to each other what is expected. The problem
-is that nodes try to connect to each other via \emph{public IP address}, but when router sees that
-public address he does not know how to route packets next and just \emph{ignores them}.
-Feature \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning}
-or \emph{NAT loopback} was designed to combat with this problem, and my router
-\href{https://www.asus.com/support/faq/1043024/}{is in the list of supported routers} so it should work in theory.
-In practice, it does not the way I expect. In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum post}
-user \texttt{ColinTaylor} has said that NAT loopback only works if you use port forwarding which I try to avoid.
+\subsection{Nodes behind the same NAT}
 
-But the problem leads us to another section!
+Nodes located behind the same NAT device were still unable to establish direct communication. 
+This behavior was expected because peers attempted to connect using their public IP addresses. 
+When packets addressed to the public IP re-enter the router from the internal network, 
+the router may be unable to determine the appropriate internal destination and therefore discard the packets.
+
+The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback}) 
+feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality 
+according to the vendor documentation \href{https://www.asus.com/support/faq/1043024/}{provided by ASUS}. However, the observed behavior did not fully match the expected functionality. 
+In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum discussion}, 
+the user \texttt{ColinTaylor} notes that NAT loopback support may depend on explicit port forwarding configuration, which this implementation intentionally avoids.
+
+This limitation motivates the discussion presented in the following section.
 
 \section{Multicast DNS}
 
