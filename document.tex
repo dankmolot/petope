@@ -1567,54 +1567,46 @@ can identify the affected connection and apply appropriate fragmentation behavio
 the original packet payload, stable multiplayer communication was successfully established.
 
 
-\phantomsection
+
+\clearpage
 \section*{Summary}
 \addcontentsline{toc}{section}{Summary}
 
-During this work, knowledge was acquired regarding techniques for establishing direct peer-to-peer connections between two computers,
-including scenarios in which both devices are located behind restrictive network environments such as home or office networks.
-The project provided an opportunity to study a field in which prior experience was limited and contributed to a significantly
-improved understanding of the underlying concepts and implementation approaches.
+This work presents the design and implementation of \emph{petope},
+a peer-to-peer VPN development project created by \theauthor to explore how two computers can be connected directly
+across the Internet without requiring manual port forwarding, static public addresses, or a traditional central VPN relay.
+The project was motivated by the practical difficulties of accessing self-hosted services and by the desire to understand,
+in a hands-on way, how modern mesh VPN systems such as Tailscale and decentralized networking projects operate.
+In addition to the technical goal, the work also aimed to produce a solution that could later be used for private remote access and multiplayer gaming.
 
-Following the research phase, experiments were conducted with the fundamental techniques required for establishing direct connections
-between computers on the Internet that are not ordinarily accessible. A custom-developed solution was implemented to investigate methods
-for discovering and establishing connections using arbitrary identifiers.
+The research phase examined several existing approaches to decentralized connectivity and peer discovery.
+Particular attention was given to the limitations of conventional VPN setups, the role of NAT traversal, and the problem of
+discovering peers when no central coordinator is available. Existing solutions and protocols were studied, including Tailscale, Radmin VPN, Yggdrasil,
+BitTorrent-style distributed hash tables, gossip-based discovery, and the \texttt{iroh} networking library.
+This research clarified the trade-offs between centralized control, usability, security, and decentralization.
+It also showed that a practical VPN implementation must solve not only encryption and addressing, but also peer discovery, dynamic routing, packet delivery, and behavior behind NAT and firewalls.
 
-After successful experimentation with the core techniques, a fully functional application was developed that can operate as a VPN solution by establishing
-direct connections between specified peers through the use of the \texttt{iroh} library. The library provides an identifier representing a public encryption key,
-which is additionally used for dynamic peer discovery and for determining potential connection paths across the Internet.
+On the implementation side, the project was developed in Rust and structured around a clear progression from
+simple networking experiments to a complete application. The initial experiments covered UDP communication, peer discovery,
+UDP hole punching, TCP hole punching attempts, and local multicast DNS discovery. These tests were used to identify what works
+reliably in realistic network environments and where transport-layer limitations appear. Based on these findings,
+the final application was designed to use the \texttt{iroh} library for secure peer identification, connection setup, and path negotiation.
+A peer is identified by a cryptographic public key, and the application automatically derives network information from that identity,
+reducing the amount of manual configuration required from the user.
 
-The resulting application operates reliably in most tested scenarios and is designed with maintainability and clarity in mind through a straightforward codebase.
-The project demonstrates the practical applicability of the implemented approach even in its current state. Future work will focus on extending and improving
-the application for personal use and multiplayer gaming scenarios.
+The final solution includes local configuration handling, automatic generation of persistent peer keys,
+virtual network interface support through a TUN device, packet routing between peers, MTU handling, and message forwarding between
+the application and the operating system network stack. The implementation also includes support for reconnection and for updating peer endpoints when network conditions change.
+Because VPN traffic must sometimes exceed the path MTU, the project also implements ICMP \emph{Packet Too Big} responses so that hosts can adjust packet sizes correctly.
+This proved important during testing and directly affected the reliability of higher-level applications.
 
-\phantomsection
-\section*{Summary (võõrnekeelne)}
-\addcontentsline{toc}{section}{Summary (võõrnekeelne)}
-
-This work is about "petope - a VPN development project" where \theauthor was learning and developing his own
-VPN solution that is based on peer-to-peer techniques to estabilish direct connection between computers.
-
-Main motivation for the work was a product Tailscale which uses peer-to-peer techniques and provides
-user-friendly configuration of the network. Main goal of the work was to learn how peer-to-peer techniques
-work under the hood and experiment with them, while in the end creating an application which will be
-able to connect to other peers on the internet and create a virtual private network from these peers.
-
-During the work \theauthor researched existing techniques and applications that are relevant to the topic.
-After research \theauthor has implemented a "Discovery server" which associates an IP address with port
-to an arbirtary identifier which later could be used to get IP address with port, and
-developed a program which connects directly via TCP and UDP to another computer with technique "hole-punching".
-Also \theauthor has tried using Multicast DNS network protocol as an alternative to the "Discovery server" to find
-a peer in the local network.
-
-After these experiments \theauthor has developed a fully functional VPN application which uses a library "iroh"
-to make direct connections similar to Tailscale. Each computer has an indivual identifier which could be retrieved
-after launching application first time, and is derived from a private key which is also used for encryption.
-In a configuration file after specifying other peers identifiers, while the application is running an user
-is able to communicate with other peer via uniquely generated IP addresses while the application maintains
-a connection to peer and rouing of IP packets.
-
-In the end \theauthor has attained a valuable knowledge and developed an useful application.
+The completed system was evaluated through practical tests on two computers and through a multiplayer Minecraft session.
+The tests showed that the application can establish a direct peer-to-peer connection after an initial relay-assisted handshake and then switch to a low-latency direct path.
+In one test, the first packet experienced a noticeably higher delay, while later packets were delivered with much lower latency,
+confirming that peer discovery and direct connectivity were functioning as intended.
+A later Minecraft test exposed an error in the handling of ICMP fragmentation messages; after correcting this issue by including the required part of the original packet, stable game connectivity was achieved.
+Overall, the work demonstrates that a functional peer-to-peer VPN can be built using existing Rust networking tools and that
+the resulting system is practical for self-hosting and gaming scenarios while remaining small enough to understand and extend.
 
 
 \end{document}
