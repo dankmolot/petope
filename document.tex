@@ -908,6 +908,8 @@ and manually do tidious work, instead I can use straightforward library that doe
 Peer part of the application is responsible to manage a connection, send and receive data.
 Router will be responsible to forward packets from TUN device to individual peers depending on destination address.
 
+\subsubsection{Converting peer ID to an IP address}
+
 I liked the idea of Yggdrasil that their IPv6 addresses represent public key of the node, so why not do the same?
 \begin{figure}[H]
   \begin{minted}{rust}
@@ -940,6 +942,8 @@ fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
 
 With these functions application can generate persistent IP addresses both for \emph{TUN interface} and
 \emph{peers}, and they'll be the same on both ends since these IP addresses are converted from public key.
+
+\subsubsection{Routing packets to peers}
 
 Then it is pretty trivial to implement routing from Router to individual peers based on an IP address:
 \begin{figure}[H]
@@ -990,6 +994,8 @@ fn route(
   \end{minted}
   \caption{IP based routing to individual peers}
 \end{figure}
+
+\subsubsection{Making a connection with a peer}
 
 But before a packet could be sent, we need to have an estabilished connection.
 For this a peer who wants to send data must connect to other peer, and other peer must receive
@@ -1105,6 +1111,8 @@ impl Peer {
   \caption{function that either retrieves existing connection or makes a new one}
 \end{figure}
 
+\subsubsection{Telling system to fragment a packet}
+
 Almost everything done, last parts are sending IP packets and receiving them from a peer.
 If you remember, TUN device has MTU size of \emph{65535} which is \emph{too big} for typical
 MTU of 1500 bytes. That's where Path MTU Discovery comes into the play mentioned in section~\ref{sec:hugemtu},
@@ -1146,6 +1154,8 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
   \end{minted}
   \caption{function that creates ICMP message when packet is too big}
 \end{figure}
+
+\subsubsection{Sending a packet to a peer}
 
 And now that we have all required functions for sending data, let's combine them:
 \begin{figure}[H]
