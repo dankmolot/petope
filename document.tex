@@ -458,67 +458,67 @@ The next step is to investigate service discovery mechanisms.
 
 \section{Peer discovery}
 
-Now that we can connect via UDP, we need to replace an IP address with an identificator.
-For this to work, some sort of a discovery server needs to be in place, which
-will tell what IP addresses an identifactor has.
+After establishing UDP-based communication, it becomes necessary to replace direct IP addressing with node identifiers.
+To achieve this, a discovery server is required to associate node identifiers with their corresponding IP addresses.
 
 \subsection{Discovery server}
 
-My own implementation will use same UDP protocol,
-and messages will consist of simple text strings in format of:
+The implemented discovery server uses the same UDP-based protocol,
+where messages are represented as plain text strings in the following format:
 \texttt{command|arguments}.
 
-When a discovery server receives a command, it also receives a source address,
-this way after receiving \texttt{register|node id} command discovery server
-can save source address like: \\ \mintinline{js}|nodes["node id"] = "source address"|
-in a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
+When the discovery server receives a command, it also obtains the source address of the sender.
+Consequently, after receiving the command \texttt{register|node id}, the server can associate the node identifier with the sender's address, for example:
+\\ \mintinline{js}|nodes["node id"] = "source address"|
+using a \href{https://en.wikipedia.org/wiki/Hash_table}{hash map}.
 
 \subsection{A node/peer}
 
-A node will just have to register itself on the discovery server, and then retrieve an
-address of a node it want to connect to via its node id.
-Put this algorithm into a loop, which registers itself, finds target address and sends a message to it.
+Each node registers itself with the discovery server and subsequently requests
+the address associated with the target node identifier.
+This process is executed continuously in a loop, allowing the node to repeatedly
+register itself, retrieve the target address, and transmit messages to the target node.
 
 \subsection{Result}
 
-I wont add a source code to this document,
-so you can see an implementation of discovery server on commit
+The source code is not included in this document.
+However, the implementation of the discovery server can be found in commit
 \href{https://github.com/dankmolot/petope/tree/5a66b32a015f395bc614a1aedc54a87a44d8dbc1}{5a66b3}.
 
-Since right now discovery uses simple text udp protocol,
-I can test it via \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
+At the current stage, the discovery mechanism relies on a plain-text UDP protocol,
+which allows it to be tested using the \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{2/netcat_discovery_example.png}
-  \caption{a screenshot of sending commands with netcat utility}
+  \caption{Sending commands using the netcat utility}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{2/discovery_server_logs.png}
-  \caption{a screenshot of discovery server logs}
+  \caption{Discovery server log output}
 \end{figure}
 
-
-Great! Now I only need to run both nodes, and wait before they connect to each other.
+After starting both nodes, the peers establish communication automatically.
 
 \begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_alpha.png}
-  \caption{a screenshot of node alpha receiving a connection from node beta}
+  \caption{Node \texttt{alpha} receiving a connection request from node \texttt{beta}}
 \end{figure}
 
 \begin{figure}[H]
   \includegraphics[width=\textwidth]{2/node_beta.png}
-  \caption{a screenshot of node beta making a connection with node alpha}
+  \caption{Node \texttt{beta} initiating a connection with node \texttt{alpha}}
 \end{figure}
 
-Here you can see that node \texttt{beta} has reached node \texttt{alpha},
-and node \texttt{alpha} responded back. Both nodes have found adresses
-only via node identificators \texttt{alpha} and \texttt{beta}. Awesome!
+The results demonstrate that node \texttt{beta} successfully reached node \texttt{alpha},
+and node \texttt{alpha} responded accordingly.
+Both nodes resolved each other's network addresses exclusively through the identifiers
+\texttt{alpha} and \texttt{beta}.
 
-Since current implementation constantly tries to find other node and connect to it,
-it is ready for UDP hole punching.
+Since the current implementation continuously attempts to discover and connect to peer nodes,
+it provides the necessary foundation for UDP hole punching.
 
 \section{UDP hole punching}
 
