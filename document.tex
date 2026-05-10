@@ -347,14 +347,14 @@ Radicle introduces its own protocol, named
 which utilizes a \href{https://radicle.xyz/guides/protocol}{gossip protocol}
 for peer and repository discovery.
 
+\newpage
+
 For example, consider the following peer topology:
 
 \begin{figure}[H]
   $$ A \leftrightarrow B \leftrightarrow C \leftrightarrow D $$
   \caption{A diagram illustrating connections between peers}
 \end{figure}
-
-\newpage
 
 Suppose peer A intends to communicate with peer D but does not possess its network address.
 Peer A propagates a gossip request to peer B, which forwards the request to peer C, and eventually to peer D.
@@ -725,6 +725,8 @@ Nodes located behind the same NAT device were still unable to establish direct c
 This behavior was expected because peers attempted to connect using their public IP addresses.
 When packets addressed to the public IP re-enter the router from the internal network,
 the router may be unable to determine the appropriate internal destination and therefore discard the packets.
+
+\newpage
 
 The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback})
 feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality
@@ -1148,6 +1150,8 @@ handle.add(&route).await.unwrap(); // add route above to the routing table
 After the route is added, packets addressed to the specified destination are forwarded through the TUN interface,
 allowing the application to process them.
 
+\newpage
+
 \subsection{Router} \label{sec:approuter}
 
 The router component is responsible for transmitting and receiving IP packets.
@@ -1563,8 +1567,6 @@ After restarting the application, the peer list correctly displayed the configur
   \caption{Application output after configuring a remote peer}
 \end{figure}
 
-\newpage
-
 While the application was running, communication with the second computer could be established using the IP addresses
 provided by the application. Upon transmission of the first IP packet destined for the remote peer, the application
 resolved the peer identifier, established an initial connection through a
@@ -1596,7 +1598,26 @@ According to the protocol specification, the message must include a portion of t
 can identify the affected connection and apply appropriate fragmentation behavior. After modifying the implementation to include
 the original packet payload, stable multiplayer communication was successfully established.
 
+\phantomsection
+\section*{Summary}
+\addcontentsline{toc}{section}{Summary}
 
+During this work, knowledge was acquired regarding techniques for establishing direct peer-to-peer connections between two computers,
+including scenarios in which both devices are located behind restrictive network environments such as home or office networks.
+The project provided an opportunity to study a field in which prior experience was limited and contributed to a significantly
+improved understanding of the underlying concepts and implementation approaches.
+
+Following the research phase, experiments were conducted with the fundamental techniques required for establishing direct connections
+between computers on the Internet that are not ordinarily accessible. A custom-developed solution was implemented to investigate methods
+for discovering and establishing connections using arbitrary identifiers.
+
+After successful experimentation with the core techniques, a fully functional application was developed that can operate as a VPN solution by establishing
+direct connections between specified peers through the use of the \texttt{iroh} library. The library provides an identifier representing a public encryption key,
+which is additionally used for dynamic peer discovery and for determining potential connection paths across the Internet.
+
+The resulting application operates reliably in most tested scenarios and is designed with maintainability and clarity in mind through a straightforward codebase.
+The project demonstrates the practical applicability of the implemented approach even in its current state. Future work will focus on extending and improving
+the application for personal use and multiplayer gaming scenarios.
 
 \clearpage
 \section*{Summary}
