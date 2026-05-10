@@ -1138,7 +1138,7 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
 
             // write icmp packet into a buffer and return it
             let mut writer = BytesMut::with_capacity(builder.size(payload.len())).writer();
-            builder.write(&mut writer, payload).unwrap(); // ipv6 does not care about payload size
+            builder.write(&mut writer, payload).unwrap();
             writer.into_inner()
         }
     }
