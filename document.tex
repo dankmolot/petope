@@ -1170,12 +1170,13 @@ The existing Rust ecosystem significantly reduces implementation complexity by p
 
 \subsection{Peers} \label{sec:apppeers}
 
-Peer part of the application is responsible to manage a connection, send and receive data.
-Router will be responsible to forward packets from TUN device to individual peers depending on destination address.
+The peer component of the application is responsible for connection management and data transmission.
+The router component forwards packets received from the TUN device to the corresponding peer based on the destination address.
 
-\subsubsection{Converting peer ID to an IP address}
+\subsubsection{Converting peer identifiers to IP addresses}
 
-I liked the idea of Yggdrasil that their IPv6 addresses represent public key of the node, so why not do the same?
+The address assignment approach is inspired by the design of Yggdrasil, where IPv6 addresses are derived from node public keys.
+A similar mechanism is implemented in this project.
 \begin{figure}[H]
   \begin{minted}{rust}
 // converts EndpointId into an ipv4 address in 10.0.0.0/8 subnet
@@ -1202,17 +1203,17 @@ fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
     )
 }
   \end{minted}
-  \caption{functions that convert EndpointId (public key) into IP addresses}
+  \caption{Functions that convert \texttt{EndpointId} values into IP addresses}
 \end{figure}
 
-With these functions application can generate persistent IP addresses both for \emph{TUN interface} and
-\emph{peers}, and they'll be the same on both ends since these IP addresses are converted from public key.
+These functions allow the application to generate deterministic IP addresses for both the \emph{TUN interface} and connected \emph{peers}.
+Since the addresses are derived directly from the public key, both communication endpoints independently obtain identical address assignments.
 
 \newpage
 
 \subsubsection{Routing packets to peers}
 
-Then it is pretty trivial to implement routing from Router to individual peers based on an IP address:
+Packet routing from the router to individual peers can then be implemented using destination IP addresses:
 \begin{figure}[H]
   \begin{minted}{rust}
 // example of peer structure
@@ -1259,16 +1260,16 @@ fn route(
     }
 }
   \end{minted}
-  \caption{IP based routing to individual peers}
+  \caption{IP-based routing to individual peers}
 \end{figure}
 
 \newpage
 
-\subsubsection{Making a connection with a peer}
+\subsubsection{Establishing a connection with a peer}
 
-But before a packet could be sent, we need to have an estabilished connection.
-For this a peer who wants to send data must connect to other peer, and other peer must receive
-incoming connection. Initiating connection is pretty simple:
+Before packets can be transmitted, a connection between peers must first be established.
+A peer intending to send data initiates a connection, while the remote peer accepts incoming connections.
+Connection establishment can be implemented as follows:
 \begin{figure}[H]
   \begin{minted}{rust}
 // presets::N0 contain n0 provided relays and discovery services
@@ -1284,10 +1285,10 @@ let conn = endpoint.connect(peer.id, b"petope/0").await.unwrap()
 
 // here connection can be cached and used to send and receive data
   \end{minted}
-  \caption{initiating connection to a peer}
+  \caption{Initiating a connection to a peer}
 \end{figure}
 
-Receiving a connection is a little bit more complicated, but still pretty easy too:
+Receiving incoming connections requires additional handling:
 \begin{figure}[H]
   \begin{minted}{rust}
 // additional map to get a peer by its id
@@ -1306,23 +1307,24 @@ while let Some(incoming) = endpoint.accept().await {
     }
 }
   \end{minted}
-  \caption{receiving incoming connection from another peer}
+  \caption{Receiving incoming connections from peers}
 \end{figure}
 
-Both connection and receiving functions are lacking a function that caches a connection.
-Since my code is asynchronous, cached connection could be accessed by multiple
-threads simultaneously, and even replaced by a new connection.
-I could use \href{https://doc.rust-lang.org/std/sync/struct.Mutex.html}{\texttt{std::sync::Mutex}},
-but connection usually would be rarely replaced, but accessed much more frequently.
-\href{https://doc.rust-lang.org/std/sync/struct.RwLock.html}{\texttt{std:sync::RwLock}}
-looks like a better choice, but there is actually a better alternative.
-\href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}} acts similarly
-as to \texttt{RwLock}, but is much more cheaper, and updates don't stop entire code
-from executing. In reality it won't probably matter, but exploring more options won't hurt.
+The previous examples omit the implementation of connection caching.
+Since the application is asynchronous, cached connections may be accessed concurrently by multiple threads and may also be replaced during runtime.
+One possible synchronization primitive is
+\href{https://doc.rust-lang.org/std/sync/struct.Mutex.html}{\texttt{std::sync::Mutex}},
+although connections are expected to be read significantly more frequently than modified.
+A more suitable alternative is
+\href{https://doc.rust-lang.org/std/sync/struct.RwLock.html}{\texttt{std::sync::RwLock}},
+which supports concurrent read access.
+In this implementation,
+\href{https://docs.rs/arc-swap/latest/arc_swap/}{\texttt{arc\_swap}}
+is used instead, as it provides efficient atomic replacement of shared values with minimal synchronization overhead.
 
 \newpage
 
-Anyway, here is missing function that caches a connection:
+The following function stores and replaces cached connections:
 \begin{figure}[H]
   \begin{minted}{rust}
 struct Peer {
@@ -1341,11 +1343,11 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{function that stores a connection so it could be used later}
+  \caption{Function that stores a reusable connection}
 \end{figure}
 
-Connection is usually only retrieved when some data needs to be sent, so it could also
-automatically try to connect to a peer like this:
+Connections are generally retrieved only when data transmission is required.
+Therefore, the retrieval function may also establish a new connection automatically if no active connection is available:
 \begin{figure}[H]
   \begin{minted}{rust}
 impl Peer {
@@ -1379,26 +1381,26 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{function that either retrieves existing connection or makes a new one}
+  \caption{Function that retrieves an existing connection or establishes a new one}
 \end{figure}
 
 \newpage
 
-\subsubsection{Telling system to fragment a packet}
+\subsubsection{Requesting packet fragmentation}
 
-Almost everything done, last parts are sending IP packets and receiving them from a peer.
-If you remember, TUN device has MTU size of \emph{65535} which is \emph{too big} for typical
-MTU of 1500 bytes. That's where Path MTU Discovery comes into the play mentioned in section~\ref{sec:hugemtu},
-iroh connection provides a minimal available MTU which could be used to tell operating system to which size
-packets should be fragmented via ICMP packets. If you have used a \texttt{ping} command, you are familiar
-that ICMP could be used to ping a machine, and ICMP packets could be blocked to hide a machine on the network.
-Blocking all ICMP packets is actually harmful to the network and should be avoided, instead only
-\href{https://support.huawei.com/enterprise/en/doc/EDOC1100174721/9dff3e87/icmp-echo-request-reply-message}{echo request/reply}
-messages should be blocked if you want to silence them.
+The remaining functionality involves transmitting and receiving IP packets between peers.
+As described in Section~\ref{sec:hugemtu}, the TUN device is configured with an MTU value of \emph{65535}, which exceeds the typical Ethernet MTU of approximately 1500 bytes.
+Consequently, Path MTU Discovery is required to ensure that packets are fragmented appropriately.
 
-As specified in \href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443} IPv6 ICMP has a
-\emph{Packet Too Big} (type 2, code 0) message which indicates that sent packet was too big and sender must reduce packet size
-to given MTU. Also ICMPv6 messages like Packet Too Big must include original IP packet of size that fits minimum MTU.
+The \texttt{iroh} connection interface provides the minimum supported MTU, which can be used to generate ICMP responses instructing the operating system to reduce packet size.
+Although ICMP is commonly associated with utilities such as \texttt{ping}, it also plays an essential role in network error reporting and path MTU discovery.
+Blocking all ICMP traffic may negatively affect network functionality and should generally be avoided.
+Instead, filtering should be limited to specific message types when necessary.
+
+According to
+\href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443},
+ICMPv6 defines the \emph{Packet Too Big} message (type 2, code 0), which informs the sender that the transmitted packet exceeds the supported MTU.
+The response must also include a portion of the original IP packet.
 \begin{figure}[H]
   \begin{minted}{rust}
 // returns an icmp response that fragmentation is needed, payload must be the same as ip slice
@@ -1425,14 +1427,14 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
     }
 }
   \end{minted}
-  \caption{function that creates ICMP message when packet is too big}
+  \caption{Function that creates an ICMP \emph{Packet Too Big} response}
 \end{figure}
 
 \newpage
 
-\subsubsection{Sending a packet to a peer}
+\subsubsection{Sending packets to peers}
 
-And now that we have all required functions for sending data, let's combine them:
+The following implementation combines the previously introduced functionality into a complete packet transmission routine:
 \begin{figure}[H]
   \begin{minted}{rust}
 impl Peer {
@@ -1468,14 +1470,15 @@ impl Peer {
     }
 }
   \end{minted}
-  \caption{complete send function for peer}
+  \caption{Complete packet transmission function for a peer}
 \end{figure}
 
-Receiving datagrams is very simple, just calls of \texttt{conn.read\_datagram()} in a loop and
-using \texttt{to\_network\_tx.send(bytes)} to forward incoming packets to TUN device.
+Receiving datagrams is comparatively straightforward and consists primarily of repeatedly calling \texttt{conn.read\_datagram()} 
+and forwarding the received packets to the TUN device using \texttt{to\_network\_tx.send(bytes)}.
 
-And that's it, after connecting all these parts from configuration to peers we get
-fully ready P2P VPN solution where each peer is locally configured.
+By integrating the previously described components, including configuration management, 
+routing, peer communication, and packet handling, the resulting implementation provides 
+a functional peer-to-peer VPN solution in which peers are configured locally.
 
 \section{Testing how it works}
 
