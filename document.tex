@@ -94,6 +94,24 @@
   breaklinks=true
 ]{hyperref}
 \usepackage{xurl}
+\usepackage{xparse}
+
+% Storage for collected links
+\newcommand{\alllinks}{}
+
+% Save original \href
+\let\oldhref\href
+
+% Redefine \href
+\RenewDocumentCommand{\href}{mm}{%
+    % Add URL to list
+    \gappto\alllinks{%
+        \item[#2] \url{#1}
+    }%
+    % Normal hyperlink behavior
+    \oldhref{#1}{#2}%
+}
+
 
 % add page break before each section
 \let\oldsection\section
@@ -343,7 +361,7 @@ Although Git itself is inherently distributed, collaboration is frequently facil
 \href{https://en.wikipedia.org/wiki/Forge_(software)}{forge platforms}
 such as \href{https://github.com/}{GitHub} and \href{https://about.gitlab.com/}{GitLab}.
 Radicle introduces its own protocol, named
-\href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood},
+\href{https://app.radicle.xyz/nodes/iris.radicle.xyz/rad\%3Az3gqcJUoA1n9HaHKufZs5FCSGazv5}{Heartwood},
 which utilizes a \href{https://radicle.xyz/guides/protocol}{gossip protocol}
 for peer and repository discovery.
 
@@ -382,7 +400,7 @@ UDP is considered as the primary transport protocol because it simplifies the im
 However, the use of UDP also requires additional mechanisms for
 \href{https://www.reddit.com/r/networking/comments/a8c42z/}{reliable delivery}
 and
-\href{https://en.wikipedia.org/wiki/Network_congestion#Congestion_control}{congestion and rate control}.
+\href{https://en.wikipedia.org/wiki/Network_congestion\#Congestion_control}{congestion and rate control}.
 Implementing these mechanisms from scratch is outside the scope of the available development time for the diploma project.
 
 \subsection{Core functionality} \label{corefunctionality}
@@ -408,7 +426,7 @@ Starting with UDP provides a lower-level foundation for understanding and implem
 Additionally, TCP-based NAT hole punching will be investigated to evaluate its feasibility within the project context.
 
 For asymmetric cryptography,
-\href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{Ed25519}
+\href{https://en.wikipedia.org/wiki/EdDSA\#Ed25519}{Ed25519}
 was selected due to its widespread adoption in systems such as SSH, WireGuard, and iroh.
 For symmetric encryption,
 \href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20}
@@ -512,8 +530,8 @@ register itself, retrieve the target address, and transmit messages to the targe
 \subsection{Result}
 
 The source code is not included in this document.
-However, the implementation of the discovery server can be found in commit
-\href{https://github.com/dankmolot/petope/tree/5a66b32a015f395bc614a1aedc54a87a44d8dbc1}{5a66b3}.
+However, the implementation of the discovery server can be found in
+\href{https://github.com/dankmolot/petope/tree/5a66b32a015f395bc614a1aedc54a87a44d8dbc1}{petope commit 5a66b3}.
 
 At the current stage, the discovery mechanism relies on a plain-text UDP protocol,
 which allows it to be tested using the \href{https://en.wikipedia.org/wiki/Netcat}{netcat} terminal utility:
@@ -672,7 +690,7 @@ The peer node implementation introduced additional complexity.
 Unlike UDP communication, TCP requires an established connection before data transmission can occur.
 Consequently, a node must either initiate a connection attempt to another peer or transition into a \emph{listen} state while awaiting incoming connections.
 
-The initial implementation, corresponding to commit \href{https://github.com/dankmolot/petope/tree/3e83b3}{3e83b3},
+The initial implementation, corresponding to \href{https://github.com/dankmolot/petope/tree/3e83b3}{petope commit 3e83b3},
 operated successfully in a localhost environment where both nodes communicated through the \href{https://en.wikipedia.org/wiki/Loopback}{loopback} interface.
 However, experiments involving separate physical devices were unsuccessful.
 This result suggested that connection establishment and listening operations would need to occur concurrently, which proved difficult to implement using synchronous Rust code.
@@ -717,7 +735,7 @@ The observed behavior indicated that the connection was established directly bet
 
 Equivalent functionality could likely have been implemented using only the Rust standard library in combination with \emph{socket2}, however,
 the adoption of Tokio simplified concurrent networking tasks and introduced established asynchronous programming practices.
-The implementation corresponding to this experiment is available under commit \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{c46a8e}.
+The implementation corresponding to this experiment is available under \href{https://github.com/dankmolot/petope/tree/c46a8e7b36c998d946180e0317b63daccaaf1a2a}{petope commit c46a8e}.
 
 \subsection{Nodes behind the same NAT}
 
@@ -728,7 +746,7 @@ the router may be unable to determine the appropriate internal destination and t
 
 \newpage
 
-The \href{https://en.wikipedia.org/wiki/Network_address_translation#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback})
+The \href{https://en.wikipedia.org/wiki/Network_address_translation\#NAT_hairpinning}{NAT hairpinning} (or \emph{NAT loopback})
 feature was designed to address this issue. The router used during experimentation is listed among devices supporting this functionality
 according to the vendor documentation \href{https://www.asus.com/support/faq/1043024/}{provided by ASUS}. However, the observed behavior did not fully match the expected functionality.
 In the \href{https://www.snbforums.com/threads/asus-ac86u-firmware-merlin-386-11-nat-loopback-not-working-please-help.85974/}{forum discussion},
@@ -824,8 +842,8 @@ service name component in the service type format
 (\textbf{\_name}.\_protocol.domain) cannot exceed 15 characters.
 
 Experimental evaluation demonstrated that node discovery occurs with low latency, typically within a fraction
-of a second on a local network. The complete implementation is available in commit
-\href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{0915f0}.
+of a second on a local network. The complete implementation is available in
+\href{https://github.com/dankmolot/petope/tree/0915f06ad2b44db91ace9968bc6654252927c25b}{petope commit 0915f0}.
 
 \section{Developing the Final Application}
 
@@ -841,8 +859,8 @@ The application consists of the following components:
   \item Peers (Section~\ref{sec:apppeers}) --- connected through the \texttt{iroh} library to exchange routed IP packets
 \end{enumerate}
 
-The implementation of the application preceded the writing of this section. The corresponding source code is available in commit
-\href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{161ffc}.
+The implementation of the application preceded the writing of this section. The corresponding source code is available in
+\href{https://github.com/dankmolot/petope/tree/161ffc0ae3fbb76fd88bc4d2ecf82507cd16596b}{petope commit 161ffc}.
 
 Figure~\ref{fig:network_pipeline} illustrates the packet routing pipeline implemented in the application.
 
@@ -904,7 +922,7 @@ The \texttt{clap} library additionally provides automatically generated help mes
 The following function either parses a
 \href{https://en.wikipedia.org/wiki/Base64}{Base64}-encoded private key
 from the configuration file or generates a new key using
-\href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html#method.generate}{\texttt{SecretKey::generate()}}.
+\href{https://docs.rs/iroh/latest/iroh/struct.SecretKey.html\#method.generate}{\texttt{SecretKey::generate()}}.
 If a new key is generated, the updated configuration is written back to disk.
 
 \begin{figure}[H]
@@ -1432,7 +1450,7 @@ Blocking all ICMP traffic may negatively affect network functionality and should
 Instead, filtering should be limited to specific message types when necessary.
 
 According to
-\href{https://datatracker.ietf.org/doc/html/rfc4443#section-3.2}{RFC 4443},
+\href{https://datatracker.ietf.org/doc/html/rfc4443\#section-3.2}{RFC 4443},
 ICMPv6 defines the \emph{Packet Too Big} message (type 2, code 0), which informs the sender that the transmitted packet exceeds the supported MTU.
 The response must also include a portion of the original IP packet.
 \begin{figure}[H]
@@ -1659,5 +1677,13 @@ A later Minecraft test exposed an error in the handling of ICMP fragmentation me
 Overall, the work demonstrates that a functional peer-to-peer VPN can be built using existing Rust networking tools and that
 the resulting system is practical for self-hosting and gaming scenarios while remaining small enough to understand and extend.
 
+
+\clearpage
+\section*{Sources}
+\addcontentsline{toc}{section}{Sources}
+
+\begin{description}
+  \alllinks
+\end{description}
 
 \end{document}
