@@ -22,6 +22,7 @@
               minted # for code highlighting
               tcolorbox # for blockquotes
               helvetic # for Helvetica font
+              inconsolata # as monoscape font
               titlesec # For modifying titles
             ]
           )

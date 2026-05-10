@@ -1,8 +1,5 @@
 \documentclass[a4paper, 10pt]{article}
 
-\usepackage{hyperref}
-\usepackage{xurl}
-\usepackage{minted}
 \usepackage{graphicx}
 \graphicspath{ {./docassets} }
 \usepackage{float} % add `H` floating parameter so figures appear like I want
@@ -12,12 +9,28 @@
 \usepackage{caption}
 \captionsetup{skip=8pt, belowskip=-8pt}
 
+% code highlighting
+\usepackage{minted}
+\usepackage[svgnames]{xcolor}
+
 \setminted{
-  % linenos,
-  % breaklines,
-  % frame=lines,
-  % framesep=2mm
+  autogobble,
+  style=vs,
+  breaklines,
+  frame=single,
+  framesep=2mm,
+  linenos,
+  baselinestretch=1.05,
+  fontsize=\small,
+  numbersep=4pt,
+  tabsize=2
 }
+
+\renewcommand{\theFancyVerbLine}{ % customize line numbers
+  \ttfamily
+  \textcolor[rgb]{0.2,0.2,0.2}{
+    \footnotesize
+      \arabic{FancyVerbLine}}}
 
 % requirements for work formatting
 % 2.5cm edge for pages
@@ -26,6 +39,9 @@
 \usepackage[T1]{fontenc}
 \usepackage{helvet}
 \renewcommand{\familydefault}{\sfdefault}
+% use inconsolata for monoscape font
+\usepackage{textcomp}
+\usepackage[scaled]{inconsolata}
 % line spacing of 1.5
 \usepackage{setspace}
 \onehalfspacing
@@ -56,6 +72,32 @@
   {\bfseries\fontsize{10pt}{12pt}\selectfont}
   {\thesubsubsection}{1em}{\MakeUppercase}
 \titlespacing*{\subsubsection}{0pt}{12pt}{12pt}
+
+% remove \parskip from the table of contets
+\makeatletter
+\patchcmd{\tableofcontents}
+  {\@starttoc{toc}}
+  {\begingroup
+   \setlength{\parskip}{0pt}
+   \@starttoc{toc}
+   \endgroup}
+  {}{}
+\makeatother
+
+% must be loaded after all packages
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!70!black,
+  citecolor=green!40!black,
+  pdfborder={0 0 0},
+  breaklinks=true
+]{hyperref}
+\usepackage{xurl}
+
+% For estonian
+% \renewcommand{\contentsname}{Sisukord}
+% \renewcommand{\figurename}{Joonis}
 
 
 \title{petope - a VPN development project}
@@ -224,7 +266,7 @@ to see if it is even posssible.
 
 About cryptography, I choose \href{https://en.wikipedia.org/wiki/EdDSA#Ed25519}{ed25519}
 since I see it is widely used in my ssh keys, Wireguard and iroh too. For symmetric cryptography
-I would use \href{ChaCha20}{https://en.wikipedia.org/wiki/ChaCha20-Poly1305} since after researching
+I would use \href{https://en.wikipedia.org/wiki/ChaCha20-Poly1305}{ChaCha20} since after researching
 \href{https://www.reddit.com/r/crypto/comments/f7c2nv/chacha20_v_aes256/}{Reddit},
 \href{https://crypto.stackexchange.com/questions/101050/xchacha20-vs-aes-128-security-and-speed}{stackexchange}
 and \href{https://nordpass.com/features/xchacha20-encryption/}{NordPass}
