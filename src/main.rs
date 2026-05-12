@@ -3,7 +3,6 @@ use crate::{config::Config, peer::ALPN, peer_addr::PeerAddr, router::Router};
 use anyhow::{Context, Result};
 use clap::Parser;
 use iroh::{Endpoint, PublicKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
-use log::info;
 
 mod config;
 mod peer;
