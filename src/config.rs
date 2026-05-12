@@ -1,22 +1,38 @@
 use crate::utils;
-use anyhow::{Context, Result, anyhow, bail};
-use iroh::{EndpointId, SecretKey};
-use toml_edit::{DocumentMut, Item, Table};
+use anyhow::{Context, Result};
+use ip_network::IpNetwork;
+use iroh::{EndpointId, PublicKey, SecretKey};
+use log::debug;
+use serde::Deserialize;
+use toml_edit::{DocumentMut, de::from_document};
 
-#[derive(Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
-    pub interface_name: Option<String>,
-    pub mtu: u16,
+    #[serde(default)]
+    pub network: Vec<Network>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Network {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub address: Vec<IpNetwork>,
+    #[serde(default)]
     pub peers: Vec<Peer>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Peer {
+    pub name: Option<String>,
     pub id: EndpointId,
+    #[serde(default)]
+    pub addresses: Vec<IpNetwork>,
 }
 
 impl Config {
     pub fn load(path: &str) -> Result<(SecretKey, Config)> {
+        debug!("loading config from {path}");
         let data = Config::read_file(path).with_context(|| format!("read config from {}", path))?;
 
         let mut doc = data
@@ -26,7 +42,9 @@ impl Config {
         let private_key =
             Config::get_or_generate_secret_key(path, &mut doc).context("get private key")?;
 
-        Ok((private_key, Config::parse(doc)?))
+        let public_key = private_key.public();
+
+        Ok((private_key, Config::process(doc, public_key)?))
     }
 
     fn read_file(path: &str) -> std::io::Result<String> {
@@ -43,7 +61,10 @@ impl Config {
     }
 
     fn get_or_generate_secret_key(path: &str, doc: &mut DocumentMut) -> Result<SecretKey> {
-        if let Some(encoded) = doc.get("private_key").and_then(|v| v.as_str()) {
+        let item: Option<&toml_edit::Item> =
+            doc.get("secret_key").or_else(|| doc.get("private_key"));
+
+        if let Some(encoded) = item.and_then(|v| v.as_str()) {
             let decoded =
                 utils::base64_decode(encoded).context("private key must be encoded in base64")?;
 
@@ -65,47 +86,28 @@ impl Config {
         }
     }
 
-    fn parse(doc: DocumentMut) -> Result<Self> {
-        let interface_name = doc
-            .get("interface_name")
-            .and_then(Item::as_str)
-            .map(String::from);
+    fn parse(doc: DocumentMut) -> Result<Self, toml_edit::de::Error> {
+        from_document(doc)
+    }
 
-        let mtu = doc
-            .get("mtu")
-            .and_then(Item::as_integer)
-            .map(|x| x as u16)
-            .unwrap_or(std::u16::MAX);
-        if mtu < 1280 {
-            bail!("mtu can't be lower than 1280");
-        }
+    fn process(doc: DocumentMut, id: PublicKey) -> Result<Self> {
+        let mut config = Config::parse(doc).context("parse config")?;
+        for n in &mut config.network {
+            if n.name.is_empty() {
+                n.name = "Unnamed".to_string();
+            }
 
-        let mut peers = Vec::new();
-        if let Some(arr) = doc.get("peer").and_then(Item::as_array_of_tables) {
-            for (i, t) in arr.iter().enumerate() {
-                peers.push(
-                    Peer::parse(t).with_context(|| format!("parse a [[peer]] at index {}", i))?,
-                );
+            if n.address.is_empty() {
+                n.address.push(utils::ipv4_from_id(&id).into());
+            }
+
+            for p in &mut n.peers {
+                if p.addresses.is_empty() {
+                    p.addresses.push(utils::ipv4_from_id(&p.id).into());
+                }
             }
         }
 
-        Ok(Config {
-            interface_name,
-            mtu: mtu.try_into().context("mtu is invalid")?,
-            peers,
-        })
-    }
-}
-
-impl Peer {
-    fn parse(t: &Table) -> Result<Self> {
-        let id = t
-            .get("id")
-            .and_then(Item::as_str)
-            .ok_or_else(|| anyhow!("expected an `id` but got nothing"))?;
-
-        let id = EndpointId::from_z32(id).context("parse `id` as an EndpointId")?;
-
-        Ok(Peer { id })
+        Ok(config)
     }
 }
