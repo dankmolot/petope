@@ -19,25 +19,27 @@ struct Cli {
     config: String,
 }
 
-#[tokio::main()]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     configure_logging();
 
     let (secret_key, config) = Config::load(&cli.config).context("load config")?;
     let addr_filter = create_addr_filter(secret_key.public());
 
-    let endpoint = Endpoint::builder(presets::N0)
-        .secret_key(secret_key)
-        .alpns(vec![ALPN.to_vec()])
-        .addr_filter(addr_filter)
-        .bind()
-        .await
-        .context("bind an endpoint")?;
+    let rt = runtime()?;
+    rt.block_on(async move {
+        let endpoint = Endpoint::builder(presets::N0)
+            .secret_key(secret_key)
+            .alpns(vec![ALPN.to_vec()])
+            .addr_filter(addr_filter)
+            .bind()
+            .await
+            .context("bind an endpoint")?;
 
-    let router = Router::new(&config, endpoint).context("Router::new")?;
+        let router = Router::new(&config, endpoint).context("Router::new")?;
 
-    router.run().await
+        router.run().await
+    })
 }
 
 fn create_addr_filter(id: PublicKey) -> AddrFilter {
@@ -54,4 +56,10 @@ fn configure_logging() {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("petope=trace".parse().unwrap()))
         .try_init().unwrap();
+}
+
+fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
 }
