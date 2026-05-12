@@ -1,7 +1,9 @@
-use crate::{config::Config, peer::ALPN, router::Router};
+use std::borrow::Cow;
+
+use crate::{config::Config, peer::ALPN, peer_addr::PeerAddr, router::Router};
 use anyhow::{Context, Result};
 use clap::Parser;
-use iroh::{Endpoint, endpoint::presets};
+use iroh::{Endpoint, PublicKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
 
 mod config;
 mod peer;
@@ -23,9 +25,12 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     let (secret_key, config) = Config::load(&cli.config).context("load config")?;
 
+    let addr_filter = create_addr_filter(secret_key.public());
+
     let endpoint = Endpoint::builder(presets::N0)
         .secret_key(secret_key)
         .alpns(vec![ALPN.to_vec()])
+        .addr_filter(addr_filter)
         .bind()
         .await
         .context("bind an endpoint")?;
@@ -33,4 +38,12 @@ async fn main() -> Result<()> {
     let router = Router::new(&config, endpoint).context("Router::new")?;
 
     router.run().await
+}
+
+fn create_addr_filter(id: PublicKey) -> AddrFilter {
+    let addr = PeerAddr::from(id);
+    AddrFilter::new(move |addrs| Cow::Owned(addrs.iter().filter(|a| match a {
+        TransportAddr::Ip(socket) => addr != socket.ip(),
+        _ => true
+    }).cloned().collect()))
 }
