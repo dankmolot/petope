@@ -36,6 +36,7 @@
           buildInputs = [
             # Rust
             rust
+            pkgs.rust-analyzer
 
             # LaTeX
             tex
