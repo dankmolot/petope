@@ -1,9 +1,9 @@
 use std::borrow::Cow;
-
 use crate::{config::Config, peer::ALPN, peer_addr::PeerAddr, router::Router};
 use anyhow::{Context, Result};
 use clap::Parser;
 use iroh::{Endpoint, PublicKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
+use log::info;
 
 mod config;
 mod peer;
@@ -23,8 +23,9 @@ struct Cli {
 #[tokio::main()]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let (secret_key, config) = Config::load(&cli.config).context("load config")?;
+    configure_logging();
 
+    let (secret_key, config) = Config::load(&cli.config).context("load config")?;
     let addr_filter = create_addr_filter(secret_key.public());
 
     let endpoint = Endpoint::builder(presets::N0)
@@ -46,4 +47,12 @@ fn create_addr_filter(id: PublicKey) -> AddrFilter {
         TransportAddr::Ip(socket) => addr != socket.ip(),
         _ => true
     }).cloned().collect()))
+}
+
+fn configure_logging() {
+    use tracing_subscriber::EnvFilter;
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env().add_directive("petope=trace".parse().unwrap()))
+        .try_init().unwrap();
 }

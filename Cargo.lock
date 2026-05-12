@@ -2941,6 +2941,7 @@ dependencies = [
  "futures-lite",
  "getifs",
  "iroh",
+ "log",
  "net-route",
  "ring-channel",
  "serde",
