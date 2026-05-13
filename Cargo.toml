@@ -25,3 +25,4 @@ arc-swap = "1"
 log = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ipnetwork = { version = "0.21", features = ["serde"] }
+prefix-trie = { version = "0.8", features = ["ipnetwork"] }
