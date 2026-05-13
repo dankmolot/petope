@@ -1,6 +1,7 @@
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use etherparse::{Icmpv4Type, Icmpv6Type, IpSlice, PacketBuilder, icmpv4::DestUnreachableHeader};
+use ipnetwork::{Ipv4Network, Ipv6Network};
 use iroh::EndpointId;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
@@ -14,11 +15,11 @@ pub fn base64_decode(encoded: &str) -> Result<Vec<u8>, base64::DecodeError> {
     base64::engine::general_purpose::STANDARD.decode(encoded)
 }
 
-pub fn ipv4_from_id(id: &EndpointId) -> Ipv4Addr {
-    Ipv4Addr::new(100, id[0], id[1], id[2])
+pub fn ipv4_from_id(id: &EndpointId) -> Ipv4Network {
+    Ipv4Addr::new(100, id[0], id[1], id[2]).into()
 }
 
-pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
+pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Network {
     fn u8_pair(a: u8, b: u8) -> u16 {
         ((a as u16) << 8) | b as u16
     }
@@ -33,6 +34,7 @@ pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Addr {
         u8_pair(id[10], id[11]),
         u8_pair(id[12], id[13]),
     )
+    .into()
 }
 
 pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -> BytesMut {

@@ -1,6 +1,6 @@
 use std::{fmt, hash::Hash};
 
-use ip_network::IpNetwork;
+use ipnetwork::IpNetwork;
 use iroh::EndpointId;
 
 use crate::config;

@@ -102,7 +102,7 @@ async fn create_network(
     let network = Network::new(cfg.name, endpoint, device);
 
     for addr in cfg.address {
-        blocked_addrs.insert(addr.network_address());
+        blocked_addrs.insert(addr.ip());
         network.add_local_addr(addr).context("add local addr")?;
     }
 

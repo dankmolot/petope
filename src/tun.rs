@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use ip_network::IpNetwork;
+use ipnetwork::IpNetwork;
 use std::sync::{Arc, Mutex};
 use tun_rs::{
     AsyncDevice, DeviceBuilder,
@@ -51,18 +51,14 @@ impl TunDevice {
         DeviceFramedWrite::new(self.device.clone(), BytesCodec::new())
     }
 
-    pub fn add_ip(&self, ip: IpNetwork) -> std::io::Result<()> {
+    pub fn add_ip(&self, net: IpNetwork) -> std::io::Result<()> {
         let mut addresses = self.addresses.lock().unwrap();
-        if !addresses.contains(&ip) {
-            match ip {
-                IpNetwork::V4(ip) => self
-                    .device
-                    .add_address_v4(ip.network_address(), ip.netmask())?,
-                IpNetwork::V6(ip) => self
-                    .device
-                    .add_address_v6(ip.network_address(), ip.network_address())?,
+        if !addresses.contains(&net) {
+            match net {
+                IpNetwork::V4(net) => self.device.add_address_v4(net.ip(), net.prefix())?,
+                IpNetwork::V6(net) => self.device.add_address_v6(net.ip(), net.prefix())?,
             };
-            addresses.push(ip);
+            addresses.push(net);
         }
 
         Ok(())
@@ -88,8 +84,8 @@ impl TunRouting<'_> {
         Ok(TunRouting { handle, device })
     }
 
-    fn ip_to_route(&self, ip: &IpNetwork) -> net_route::Route {
-        net_route::Route::new(ip.network_address(), ip.netmask()).with_ifindex(self.device.index)
+    fn ip_to_route(&self, net: &IpNetwork) -> net_route::Route {
+        net_route::Route::new(net.ip(), net.prefix()).with_ifindex(self.device.index)
     }
 
     pub async fn add(&self, target: &IpNetwork) -> std::io::Result<()> {

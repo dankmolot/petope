@@ -24,4 +24,4 @@ dashmap = "6"
 arc-swap = "1"
 log = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-ip_network = { version = "0.4", features = ["serde"] }
+ipnetwork = { version = "0.21", features = ["serde"] }

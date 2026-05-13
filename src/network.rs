@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use dashmap::{DashMap, Entry};
-use ip_network::IpNetwork;
+use ipnetwork::IpNetwork;
 use iroh::{Endpoint, EndpointId};
 use std::{fmt, sync::Arc};
 

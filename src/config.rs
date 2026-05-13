@@ -1,6 +1,6 @@
 use crate::utils;
 use anyhow::{Context, Result};
-use ip_network::IpNetwork;
+use ipnetwork::IpNetwork;
 use iroh::{EndpointId, PublicKey, SecretKey};
 use log::debug;
 use serde::Deserialize;
