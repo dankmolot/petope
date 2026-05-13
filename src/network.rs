@@ -1,8 +1,15 @@
 use anyhow::{Context, Result};
 use dashmap::{DashMap, Entry};
+use etherparse::IpSlice;
+use futures::{SinkExt, StreamExt};
 use ipnetwork::IpNetwork;
 use iroh::{Endpoint, EndpointId};
-use std::{fmt, sync::Arc};
+use log::error;
+use prefix_trie::joint::JointPrefixMap;
+use std::{
+    fmt,
+    sync::{Arc, Mutex},
+};
 
 use crate::{peer::Peer, tun::TunDevice};
 
@@ -13,6 +20,7 @@ pub struct Network {
     endpoint: Endpoint,
     peers: DashMap<EndpointId, Arc<Peer>>,
     device: TunDevice,
+    routing_table: Arc<Mutex<JointPrefixMap<IpNetwork, EndpointId>>>,
 }
 
 impl Network {
@@ -22,11 +30,19 @@ impl Network {
             endpoint,
             peers: DashMap::new(),
             device,
+            routing_table: Arc::default(),
         }
     }
 
     pub fn add_local_addr(&self, addr: IpNetwork) -> std::io::Result<()> {
-        self.device.add_ip(addr)
+        // add addr on tun device
+        self.device.add_ip(addr)?;
+        // route added address to current endpoint id
+        self.routing_table
+            .lock()
+            .unwrap()
+            .insert(addr, self.endpoint.id());
+        Ok(())
     }
 
     pub async fn add_peers(&self, peers: impl Iterator<Item = &Arc<Peer>>) -> Result<()> {
@@ -79,7 +95,50 @@ impl Network {
         self.device.addresses()
     }
 
-    pub async fn run(&self) {}
+    pub fn run(&self) {
+        self.tun_reader();
+    }
+
+    fn tun_reader(&self) {
+        let my_id = self.endpoint.id();
+        let mut reader = self.device.reader();
+        let mut writer = self.device.writer();
+        let routing_table = self.routing_table.clone();
+
+        tokio::spawn(async move {
+            // receive bytes from tun device
+            while let Some(Ok(bytes)) = reader.next().await {
+                // parse bytes into ip packet
+                let packet = match IpSlice::from_slice(&bytes[..]) {
+                    Ok(packet) => packet,
+                    Err(e) => {
+                        error!("received bad packet from tun: {:?}", e);
+                        continue;
+                    }
+                };
+
+                // extract destination addresses
+                let dst: IpNetwork = packet.destination_addr().into();
+
+                // get EndpointId by longest matching prefix
+                let found_id = routing_table
+                    .lock()
+                    .unwrap()
+                    .get_lpm(&dst)
+                    .map(|(_, id)| id.clone());
+
+                if let Some(id) = found_id {
+                    // route packet back if id matches current endpoint id
+                    if id == my_id {
+                        let _ = writer.send(bytes).await;
+                        continue;
+                    }
+
+                    println!("{} bytes -> {}", bytes.len(), id);
+                }
+            }
+        });
+    }
 }
 
 impl fmt::Display for Network {

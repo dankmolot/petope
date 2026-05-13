@@ -1832,15 +1832,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ipnetwork"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf370abdafd54d13e54a620e8c3e1145f28e46cc9d704bc6d94414559df41763"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "iprfc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2972,9 +2963,8 @@ dependencies = [
  "dashmap",
  "etherparse",
  "futures",
- "futures-lite",
  "getifs",
- "ipnetwork 0.21.1",
+ "ipnetwork",
  "iroh",
  "log",
  "net-route",
@@ -3155,7 +3145,7 @@ checksum = "23370be78b7e5bcbb0cab4a02047eb040279a693c78daad04c2c5f1c24a83503"
 dependencies = [
  "either",
  "ipnet",
- "ipnetwork 0.20.0",
+ "ipnetwork",
  "num-traits",
 ]
 

@@ -76,11 +76,10 @@ fn main() -> Result<()> {
                 info!(" - {} id={} addresses={:?}", &p, p.id.fmt_short(), addrs)
             }
 
-            network.run().await;
-            tokio::signal::ctrl_c().await?;
+            network.run();
         }
 
-        // tokio::signal::ctrl_c().await?;
+        tokio::signal::ctrl_c().await?;
         info!("bye bye");
 
         endpoint.close().await;
