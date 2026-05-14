@@ -95,6 +95,10 @@ impl Network {
         self.device.addresses()
     }
 
+    pub fn endpoint(&self) -> Endpoint {
+        self.endpoint.clone()
+    }
+
     pub fn run(&self) {
         self.tun_reader();
     }

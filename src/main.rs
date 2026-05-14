@@ -9,7 +9,7 @@ use crate::{
 use anyhow::{Context, Result};
 use clap::Parser;
 use dashmap::DashSet;
-use iroh::{Endpoint, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
+use iroh::{Endpoint, SecretKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
 use log::info;
 
 mod config;
@@ -36,17 +36,7 @@ fn main() -> Result<()> {
 
     let rt = runtime()?;
     rt.block_on(async move {
-        let blocked_addrs = Arc::new(DashSet::new());
-
-        let endpoint = Endpoint::builder(presets::N0)
-            .secret_key(secret_key)
-            .alpns(vec![ALPN.to_vec()])
-            .addr_filter(create_addr_filter(blocked_addrs.clone()))
-            .bind()
-            .await
-            .context("bind an endpoint")?;
-
-        let network = create_network(config, endpoint.clone(), &blocked_addrs)
+        let network = create_network(config, secret_key)
             .await
             .context("create network")?;
 
@@ -72,17 +62,23 @@ fn main() -> Result<()> {
         tokio::signal::ctrl_c().await?;
         info!("bye bye");
 
-        endpoint.close().await;
+        network.endpoint().close().await;
 
         Ok(())
     })
 }
 
-async fn create_network(
-    cfg: Config,
-    endpoint: Endpoint,
-    blocked_addrs: &DashSet<IpAddr>,
-) -> Result<Network> {
+async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Network> {
+    let blocked_addrs = Arc::new(DashSet::new());
+
+    let endpoint = Endpoint::builder(presets::N0)
+        .secret_key(secret_key)
+        .alpns(vec![ALPN.to_vec()])
+        .addr_filter(create_addr_filter(blocked_addrs.clone()))
+        .bind()
+        .await
+        .context("bind an endpoint")?;
+
     let name = tun::get_device_name().context("get device name")?;
     let device = TunDevice::create(&name, None)
         .await
