@@ -9,16 +9,10 @@ use toml_edit::{DocumentMut, de::from_document};
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     #[serde(default)]
-    pub network: Vec<Network>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Network {
-    #[serde(default)]
     pub name: String,
-    #[serde(default)]
-    pub address: Vec<IpNetwork>,
-    #[serde(default)]
+    #[serde(default, alias = "address")]
+    pub addresses: Vec<IpNetwork>,
+    #[serde(default, alias = "peer")]
     pub peers: Vec<Peer>,
 }
 
@@ -26,7 +20,7 @@ pub struct Network {
 pub struct Peer {
     pub name: Option<String>,
     pub id: EndpointId,
-    #[serde(default)]
+    #[serde(default, alias = "address")]
     pub addresses: Vec<IpNetwork>,
 }
 
@@ -92,19 +86,17 @@ impl Config {
 
     fn process(doc: DocumentMut, id: PublicKey) -> Result<Self> {
         let mut config = Config::parse(doc).context("parse config")?;
-        for n in &mut config.network {
-            if n.name.is_empty() {
-                n.name = "Unnamed".to_string();
-            }
+        if config.name.is_empty() {
+            config.name = "Unnamed".to_string();
+        }
 
-            if n.address.is_empty() {
-                n.address.push(utils::ipv4_from_id(&id).into());
-            }
+        if config.addresses.is_empty() {
+            config.addresses.push(utils::ipv4_from_id(&id).into());
+        }
 
-            for p in &mut n.peers {
-                if p.addresses.is_empty() {
-                    p.addresses.push(utils::ipv4_from_id(&p.id).into());
-                }
+        for p in &mut config.peers {
+            if p.addresses.is_empty() {
+                p.addresses.push(utils::ipv4_from_id(&p.id).into());
             }
         }
 

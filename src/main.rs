@@ -10,7 +10,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use dashmap::DashSet;
 use iroh::{Endpoint, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
-use log::{info, warn};
+use log::info;
 
 mod config;
 mod network;
@@ -34,14 +34,6 @@ fn main() -> Result<()> {
 
     info!("your id: {}", secret_key.public());
 
-    if config.network.len() == 0 {
-        warn!(
-            "no networks were defined in {}, here is an example:\n[[network]]\nname = \"MyNet\"",
-            &cli.config
-        );
-        std::process::exit(1);
-    }
-
     let rt = runtime()?;
     rt.block_on(async move {
         let blocked_addrs = Arc::new(DashSet::new());
@@ -54,30 +46,28 @@ fn main() -> Result<()> {
             .await
             .context("bind an endpoint")?;
 
-        for cfg in config.network {
-            let network = create_network(cfg, endpoint.clone(), &blocked_addrs)
-                .await
-                .context("create network")?;
+        let network = create_network(config, endpoint.clone(), &blocked_addrs)
+            .await
+            .context("create network")?;
 
-            let addrs: Vec<String> = network
-                .local_addrs()
-                .iter()
-                .map(|v| v.to_string())
-                .collect();
-            info!(
-                "{} if={} addresses={:?}",
-                &network,
-                network.device_name(),
-                addrs
-            );
+        let addrs: Vec<String> = network
+            .local_addrs()
+            .iter()
+            .map(|v| v.to_string())
+            .collect();
+        info!(
+            "{} if={} addresses={:?}",
+            &network,
+            network.device_name(),
+            addrs
+        );
 
-            for p in network.peers() {
-                let addrs: Vec<String> = p.addresses.iter().map(|v| v.to_string()).collect();
-                info!(" - {} id={} addresses={:?}", &p, p.id.fmt_short(), addrs)
-            }
-
-            network.run();
+        for p in network.peers() {
+            let addrs: Vec<String> = p.addresses.iter().map(|v| v.to_string()).collect();
+            info!(" - {} id={} addresses={:?}", &p, p.id.fmt_short(), addrs)
         }
+
+        network.run();
 
         tokio::signal::ctrl_c().await?;
         info!("bye bye");
@@ -89,7 +79,7 @@ fn main() -> Result<()> {
 }
 
 async fn create_network(
-    cfg: config::Network,
+    cfg: Config,
     endpoint: Endpoint,
     blocked_addrs: &DashSet<IpAddr>,
 ) -> Result<Network> {
@@ -100,7 +90,7 @@ async fn create_network(
 
     let network = Network::new(cfg.name, endpoint, device);
 
-    for addr in cfg.address {
+    for addr in cfg.addresses {
         blocked_addrs.insert(addr.ip());
         network.add_local_addr(addr).context("add local addr")?;
     }
