@@ -37,7 +37,7 @@ impl Router {
         }
 
         println!("---");
-        println!("current id: {}", me.id.to_z32());
+        println!("current id: {}", me.id);
         println!("ipv4: {} ipv6: {}", me.v4, me.v6);
         println!("---");
         println!("peers:");
