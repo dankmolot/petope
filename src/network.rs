@@ -150,46 +150,36 @@ impl Network {
                     }
                 };
 
-                let remote_id = match incoming_zero_rtt.remote_id() {
-                    Ok(id) => id,
-                    Err(e) => {
-                        error!(
-                            "incoming 0-RTT connection {remote_addr:?} has bad endpoint id: {e}",
-                        );
-                        continue;
-                    }
-                };
-
-                let peer = match peers.get(&remote_id) {
-                    Some(peer) => peer.clone(),
-                    None => {
+                if let Some(remote_id) = incoming_zero_rtt.remote_id().ok() {
+                    if !peers.contains_key(&remote_id) {
                         warn!(
                             "incoming 0-RTT connection {remote_addr:?} with id {remote_id} is not in the peer list!"
                         );
+                    }
+                }
+
+                let conn = match incoming_zero_rtt.handshake_completed().await {
+                    Ok(conn) => conn,
+                    Err(e) => {
+                        error!("handshake with {remote_addr:?} failed: {e}");
                         continue;
                     }
                 };
 
-                // finish handshake outside of main loop
-                tokio::spawn(async move {
-                    let conn = match incoming_zero_rtt.handshake_completed().await {
-                        Ok(conn) => conn,
-                        Err(e) => {
-                            error!(
-                                "handshake with incoming peer {} and address {remote_addr:?} failed: {e}",
-                                remote_id.fmt_short()
-                            );
-                            return;
-                        }
-                    };
-
-                    info!(
-                        "accepted incoming connection {} from {peer}",
-                        conn.stable_id()
+                let Some(peer) = peers.get(&conn.remote_id()).map(|v| v.clone()) else {
+                    warn!(
+                        "connected peer {} from {remote_addr:?} is not in the peer list!",
+                        conn.remote_id()
                     );
+                    continue;
+                };
 
-                    peer.set_connection(conn);
-                });
+                info!(
+                    "accepted incoming connection {} from {peer}",
+                    conn.stable_id()
+                );
+
+                peer.set_connection(conn);
             }
         });
     }
