@@ -7,8 +7,11 @@ use dashmap::DashMap;
 use etherparse::IpSlice;
 use futures::{SinkExt, StreamExt};
 use ipnetwork::IpNetwork;
-use iroh::{Endpoint, EndpointId, endpoint::IncomingAddr};
-use log::{error, info, warn};
+use iroh::{
+    Endpoint, EndpointId,
+    endpoint::{ConnectOptions, IncomingAddr, ZeroRttStatus},
+};
+use log::{debug, error, info, warn};
 use std::{
     fmt,
     sync::{Arc, Weak},
@@ -196,7 +199,32 @@ impl Network {
         tokio::spawn(async move {
             while let Some(_) = rx.recv().await {
                 if let Some(peer) = peer.upgrade() {
-                    match endpoint.connect(peer.id(), ALPN).await {
+                    let connecting = match endpoint
+                        .connect_with_opts(peer.id(), ALPN, ConnectOptions::new())
+                        .await
+                    {
+                        Ok(conn) => conn,
+                        Err(e) => {
+                            error!("initiate connect with {peer} failed due: {e}");
+                            continue;
+                        }
+                    };
+
+                    let connect_result = match connecting.into_0rtt() {
+                        Ok(conn) => {
+                            debug!("using 0-RTT connect with {peer}");
+                            match conn.handshake_completed().await {
+                                Ok(result) => match result {
+                                    ZeroRttStatus::Accepted(conn) => Ok(conn),
+                                    ZeroRttStatus::Rejected(conn) => Ok(conn),
+                                },
+                                Err(e) => Err(e),
+                            }
+                        }
+                        Err(conn) => conn.await,
+                    };
+
+                    match connect_result {
                         Ok(conn) => {
                             info!("connected to {peer} with connection {}", conn.stable_id());
                             peer.set_connection(conn);
