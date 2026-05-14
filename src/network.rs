@@ -7,10 +7,7 @@ use dashmap::DashMap;
 use etherparse::IpSlice;
 use futures::{SinkExt, StreamExt};
 use ipnetwork::IpNetwork;
-use iroh::{
-    Endpoint, EndpointId,
-    endpoint::{IncomingAddr, SendDatagramError},
-};
+use iroh::{Endpoint, EndpointId, endpoint::IncomingAddr};
 use log::{error, info, warn};
 use std::{
     fmt,

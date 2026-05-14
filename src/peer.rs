@@ -250,7 +250,7 @@ impl Peer {
 
 impl fmt::Display for Peer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Peer({:?})", &self.name)
+        write!(f, "Peer({:?})", &self.name.read().unwrap())
     }
 }
 
