@@ -3,7 +3,6 @@ use std::{borrow::Cow, net::IpAddr, sync::Arc};
 use crate::{
     config::Config,
     network::{ALPN, Network},
-    peer::Peer,
     tun::TunDevice,
 };
 use anyhow::{Context, Result};
@@ -15,6 +14,7 @@ use log::info;
 mod config;
 mod network;
 mod peer;
+mod routing_table;
 mod tun;
 mod utils;
 
@@ -53,8 +53,8 @@ fn main() -> Result<()> {
         );
 
         for p in network.peers() {
-            let addrs: Vec<String> = p.addresses.iter().map(|v| v.to_string()).collect();
-            info!(" - {} id={} addresses={:?}", &p, p.id.fmt_short(), addrs)
+            let addrs: Vec<String> = p.addresses().iter().map(|v| v.to_string()).collect();
+            info!(" - {} id={} addresses={:?}", &p, p.id().fmt_short(), addrs)
         }
 
         network.run();
@@ -91,8 +91,19 @@ async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Network> {
         network.add_local_addr(addr).context("add local addr")?;
     }
 
-    let peers: Vec<Arc<Peer>> = cfg.peers.iter().map(|v| Arc::new(v.into())).collect();
-    network.add_peers(peers.iter()).await?;
+    for peer in cfg.peers {
+        let p = network.create_peer(peer.id);
+
+        if let Some(name) = peer.name {
+            p.set_name(name);
+        }
+
+        for addr in peer.addresses {
+            p.add_prefix(addr)
+                .await
+                .with_context(|| format!("add prefix {} to peer {}", addr, &p))?;
+        }
+    }
 
     Ok(network)
 }

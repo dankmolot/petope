@@ -2970,7 +2970,9 @@ dependencies = [
  "net-route",
  "prefix-trie",
  "ring-channel",
+ "ringbuffer",
  "serde",
+ "thiserror 2.0.18",
  "tokio",
  "toml_edit",
  "tracing-subscriber",
@@ -3379,6 +3381,12 @@ dependencies = [
  "slotmap",
  "spin 0.9.8",
 ]
+
+[[package]]
+name = "ringbuffer"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57b0b88a509053cbfd535726dcaaceee631313cef981266119527a1d110f6d2b"
 
 [[package]]
 name = "rkyv"

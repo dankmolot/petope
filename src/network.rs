@@ -1,26 +1,31 @@
-use anyhow::{Context, Result};
-use dashmap::{DashMap, Entry};
+use crate::{
+    peer::{Peer, PeerRoutingTable, SendError},
+    tun::TunDevice,
+    utils,
+};
+use dashmap::DashMap;
 use etherparse::IpSlice;
 use futures::{SinkExt, StreamExt};
 use ipnetwork::IpNetwork;
-use iroh::{Endpoint, EndpointId};
-use log::error;
-use prefix_trie::joint::JointPrefixMap;
+use iroh::{
+    Endpoint, EndpointId,
+    endpoint::{IncomingAddr, SendDatagramError},
+};
+use log::{error, info, warn};
 use std::{
     fmt,
-    sync::{Arc, Mutex},
+    sync::{Arc, Weak},
 };
-
-use crate::{peer::Peer, tun::TunDevice};
+use tokio::sync::mpsc;
 
 pub const ALPN: &[u8] = b"petope/0";
 
 pub struct Network {
     pub name: String,
     endpoint: Endpoint,
-    peers: DashMap<EndpointId, Arc<Peer>>,
-    device: TunDevice,
-    routing_table: Arc<Mutex<JointPrefixMap<IpNetwork, EndpointId>>>,
+    device: Arc<TunDevice>,
+    peers: Arc<DashMap<EndpointId, Arc<Peer>>>,
+    routing_table: Arc<PeerRoutingTable>,
 }
 
 impl Network {
@@ -28,59 +33,31 @@ impl Network {
         Network {
             name,
             endpoint,
-            peers: DashMap::new(),
-            device,
-            routing_table: Arc::default(),
+            device: Arc::new(device),
+            peers: Arc::default(),
+            routing_table: Arc::new(PeerRoutingTable::new()),
         }
     }
 
     pub fn add_local_addr(&self, addr: IpNetwork) -> std::io::Result<()> {
         // add addr on tun device
         self.device.add_ip(addr)?;
-        // route added address to current endpoint id
-        self.routing_table
-            .lock()
-            .unwrap()
-            .insert(addr, self.endpoint.id());
         Ok(())
     }
 
-    pub async fn add_peers(&self, peers: impl Iterator<Item = &Arc<Peer>>) -> Result<()> {
-        let routing = self.device.routing().context("get tun routing")?;
-        for peer in peers {
-            match self.peers.entry(peer.id) {
-                Entry::Occupied(entry) => {
-                    let old = entry.get();
-                    let removed = old.addresses.iter().filter(|a| !peer.addresses.contains(a));
-                    for addr in removed {
-                        routing
-                            .remove(addr)
-                            .await
-                            .with_context(|| format!("delete {} from routing", &addr))?;
-                    }
-                    let added = peer.addresses.iter().filter(|a| !old.addresses.contains(a));
-                    for addr in added {
-                        routing
-                            .remove(addr)
-                            .await
-                            .with_context(|| format!("delete {} from routing", &addr))?;
-                    }
-                    entry.replace_entry(peer.clone());
-                }
-                Entry::Vacant(entry) => {
-                    for addr in &peer.addresses {
-                        routing
-                            .add(addr)
-                            .await
-                            .with_context(|| format!("add {} to routing", &addr))?;
-                    }
+    pub fn create_peer(&self, id: EndpointId) -> Arc<Peer> {
+        let (connection_request, rx) = mpsc::channel(1);
+        let peer = Arc::new(Peer::new(
+            id,
+            Arc::downgrade(&self.device),
+            Arc::downgrade(&self.routing_table),
+            connection_request,
+        ));
 
-                    entry.insert(peer.clone());
-                }
-            }
-        }
+        self.peers.insert(id, peer.clone());
+        self.connector(Arc::downgrade(&peer), rx);
 
-        Ok(())
+        return peer;
     }
 
     pub fn device_name(&self) -> &str {
@@ -101,10 +78,10 @@ impl Network {
 
     pub fn run(&self) {
         self.tun_reader();
+        self.acceptor();
     }
 
     fn tun_reader(&self) {
-        let my_id = self.endpoint.id();
         let mut reader = self.device.reader();
         let mut writer = self.device.writer();
         let routing_table = self.routing_table.clone();
@@ -112,6 +89,8 @@ impl Network {
         tokio::spawn(async move {
             // receive bytes from tun device
             while let Some(Ok(bytes)) = reader.next().await {
+                let bytes = bytes.freeze();
+
                 // parse bytes into ip packet
                 let packet = match IpSlice::from_slice(&bytes[..]) {
                     Ok(packet) => packet,
@@ -124,21 +103,114 @@ impl Network {
                 // extract destination addresses
                 let dst: IpNetwork = packet.destination_addr().into();
 
-                // get EndpointId by longest matching prefix
-                let found_id = routing_table
-                    .lock()
-                    .unwrap()
-                    .get_lpm(&dst)
-                    .map(|(_, id)| id.clone());
+                if let Some(peer) = routing_table.get(&dst) {
+                    if let Err(err) = peer.send(bytes) {
+                        match err {
+                            SendError::TooLarge(mtu, bytes) => {
+                                if let Some(payload) =
+                                    utils::fragmentation_needed_response(&bytes, mtu)
+                                {
+                                    let _ = writer.send(payload).await;
+                                }
+                            }
+                            SendError::Other(err) => error!("send to {peer} failed: {err}"),
+                        }
+                    }
+                }
+            }
+        });
+    }
 
-                if let Some(id) = found_id {
-                    // route packet back if id matches current endpoint id
-                    if id == my_id {
-                        let _ = writer.send(bytes).await;
+    fn acceptor(&self) {
+        let endpoint = self.endpoint.clone();
+        let peers = self.peers.clone();
+
+        tokio::spawn(async move {
+            while let Some(incoming) = endpoint.accept().await {
+                let remote_addr = incoming.remote_addr();
+                let remote_id = match remote_addr {
+                    IncomingAddr::Relay { endpoint_id, .. } => Some(endpoint_id),
+                    _ => None,
+                };
+
+                if let Some(remote_id) = remote_id {
+                    if !peers.contains_key(&remote_id) {
+                        warn!(
+                            "incoming connection {remote_addr:?} with id {remote_id} is not in the peer list!"
+                        );
                         continue;
                     }
+                }
 
-                    println!("{} bytes -> {}", bytes.len(), id);
+                let incoming_zero_rtt = match incoming.accept() {
+                    Ok(a) => a.into_0rtt(),
+                    Err(e) => {
+                        error!("bad incoming connection {remote_addr:?}: {e}");
+                        continue;
+                    }
+                };
+
+                let remote_id = match incoming_zero_rtt.remote_id() {
+                    Ok(id) => id,
+                    Err(e) => {
+                        error!(
+                            "incoming 0-RTT connection {remote_addr:?} has bad endpoint id: {e}",
+                        );
+                        continue;
+                    }
+                };
+
+                let peer = match peers.get(&remote_id) {
+                    Some(peer) => peer.clone(),
+                    None => {
+                        warn!(
+                            "incoming 0-RTT connection {remote_addr:?} with id {remote_id} is not in the peer list!"
+                        );
+                        continue;
+                    }
+                };
+
+                // finish handshake outside of main loop
+                tokio::spawn(async move {
+                    let conn = match incoming_zero_rtt.handshake_completed().await {
+                        Ok(conn) => conn,
+                        Err(e) => {
+                            error!(
+                                "handshake with incoming peer {} and address {remote_addr:?} failed: {e}",
+                                remote_id.fmt_short()
+                            );
+                            return;
+                        }
+                    };
+
+                    info!(
+                        "accepted incoming connection {} from {peer}",
+                        conn.stable_id()
+                    );
+
+                    peer.set_connection(conn);
+                });
+            }
+        });
+    }
+
+    fn connector(&self, peer: Weak<Peer>, mut rx: mpsc::Receiver<()>) {
+        let endpoint = self.endpoint.clone();
+        tokio::spawn(async move {
+            while let Some(_) = rx.recv().await {
+                if let Some(peer) = peer.upgrade() {
+                    match endpoint.connect(peer.id(), ALPN).await {
+                        Ok(conn) => {
+                            info!("connected to {peer} with connection {}", conn.stable_id());
+                            peer.set_connection(conn);
+                        }
+                        Err(e) => {
+                            error!("connect to {peer} failed: {e}");
+                        }
+                    }
+
+                    // drain buffered requests
+                    while rx.try_recv().is_ok() {}
                 }
             }
         });

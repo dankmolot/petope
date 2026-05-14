@@ -37,7 +37,11 @@ pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Network {
     .into()
 }
 
-pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -> BytesMut {
+pub fn fragmentation_needed_response(payload: &[u8], mtu: usize) -> Option<BytesMut> {
+    let Ok(ip) = IpSlice::from_slice(payload) else {
+        return None;
+    };
+
     match ip {
         IpSlice::Ipv4(v4) => {
             let header = v4.header();
@@ -52,7 +56,7 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
 
             let mut writer = BytesMut::with_capacity(builder.size(payload.len())).writer();
             builder.write(&mut writer, payload).unwrap();
-            writer.into_inner()
+            Some(writer.into_inner())
         }
         IpSlice::Ipv6(v6) => {
             let header = v6.header();
@@ -65,7 +69,7 @@ pub fn fragmentation_needed_response(ip: &IpSlice, payload: &[u8], mtu: usize) -
 
             let mut writer = BytesMut::with_capacity(builder.size(payload.len())).writer();
             builder.write(&mut writer, payload).unwrap(); // ipv6 does not care about payload size
-            writer.into_inner()
+            Some(writer.into_inner())
         }
     }
 }
