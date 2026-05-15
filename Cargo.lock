@@ -1823,6 +1823,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "iprfc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2954,13 +2963,16 @@ dependencies = [
  "dashmap",
  "etherparse",
  "futures",
- "futures-lite",
  "getifs",
+ "ipnetwork",
  "iroh",
  "log",
  "net-route",
+ "prefix-trie",
  "ring-channel",
+ "ringbuffer",
  "serde",
+ "thiserror 2.0.18",
  "tokio",
  "toml_edit",
  "tracing-subscriber",
@@ -3135,6 +3147,7 @@ checksum = "23370be78b7e5bcbb0cab4a02047eb040279a693c78daad04c2c5f1c24a83503"
 dependencies = [
  "either",
  "ipnet",
+ "ipnetwork",
  "num-traits",
 ]
 
@@ -3368,6 +3381,12 @@ dependencies = [
  "slotmap",
  "spin 0.9.8",
 ]
+
+[[package]]
+name = "ringbuffer"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57b0b88a509053cbfd535726dcaaceee631313cef981266119527a1d110f6d2b"
 
 [[package]]
 name = "rkyv"
@@ -3673,6 +3692,15 @@ dependencies = [
  "serde",
  "serde_core",
  "zmij",
+]
+
+[[package]]
+name = "serde_spanned"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6662b5879511e06e8999a8a235d848113e942c9124f211511b16466ee2995f26"
+dependencies = [
+ "serde_core",
 ]
 
 [[package]]
@@ -4173,6 +4201,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b59c4d22ed448339746c59b905d24568fcbb3ab65a500494f7b8c3e97739f2b"
 dependencies = [
  "indexmap",
+ "serde_core",
+ "serde_spanned",
  "toml_datetime",
  "toml_parser",
  "toml_writer",

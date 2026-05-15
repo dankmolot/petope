@@ -1,217 +1,264 @@
-use crate::{config, utils};
-use arc_swap::ArcSwapOption;
+use crate::{routing_table::RoutingTable, tun::TunDevice, utils};
 use bytes::Bytes;
-use etherparse::{IpHeadersSlice, IpSlice};
-use futures_lite::StreamExt;
+use etherparse::IpSlice;
+use futures::SinkExt;
+use ipnetwork::IpNetwork;
 use iroh::{
-    Endpoint, EndpointId,
-    endpoint::{ConnectError, Connection, ConnectionError, SendDatagramError, VarInt},
+    EndpointId,
+    endpoint::{Connection, ConnectionError, SendDatagramError},
 };
-use ring_channel::{RingReceiver, RingSender};
+use log::{debug, error, warn};
+use prefix_trie::joint::JointPrefixSet;
+use ringbuffer::{AllocRingBuffer, RingBuffer};
 use std::{
-    fmt::Display,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr},
-    sync::Arc,
+    fmt,
+    sync::{Arc, Mutex, RwLock, Weak},
 };
-use tokio::sync::Notify;
+use thiserror::Error;
+use tokio::sync::{Notify, futures::Notified, mpsc};
 
-pub const ALPN: &[u8] = b"petope/0";
+pub type PeerRoutingTable = RoutingTable<Peer>;
 
 pub struct Peer {
-    pub id: EndpointId,
-    pub ipv4: Ipv4Addr,
-    pub ipv6: Ipv6Addr,
-    endpoint: Endpoint,
-    conn: ArcSwapOption<Connection>,
-    on_connection_change: Notify,
-    to_network_tx: RingSender<Bytes>,
-    to_peer_rx: RingReceiver<Bytes>,
+    name: RwLock<String>,
+    id: EndpointId,
+    device: Weak<TunDevice>,
+    routing_table: Weak<PeerRoutingTable>,
+    routes: Arc<RwLock<JointPrefixSet<IpNetwork>>>,
+    connection: RwLock<Option<Connection>>,
+    send_queue: Mutex<Option<AllocRingBuffer<Bytes>>>,
+    connection_request: mpsc::Sender<()>,
 }
 
 impl Peer {
     pub fn new(
-        config: &config::Peer,
-        endpoint: Endpoint,
-        to_network_tx: RingSender<Bytes>,
-        to_peer_rx: RingReceiver<Bytes>,
-    ) -> Arc<Self> {
-        let id = config.id;
-
-        Arc::new(Peer {
+        id: EndpointId,
+        device: Weak<TunDevice>,
+        routing_table: Weak<PeerRoutingTable>,
+        connection_request: mpsc::Sender<()>,
+    ) -> Self {
+        Peer {
             id,
-            ipv4: utils::ipv4_from_id(&id),
-            ipv6: utils::ipv6_from_id(&id),
-            endpoint,
-            conn: ArcSwapOption::empty(),
-            on_connection_change: Notify::new(),
-            to_network_tx,
-            to_peer_rx,
+            device,
+            routing_table,
+            connection_request,
+            name: RwLock::new(id.fmt_short().to_string()),
+            routes: Arc::default(),
+            connection: RwLock::default(),
+            send_queue: Mutex::default(),
+        }
+    }
+
+    pub fn id(&self) -> EndpointId {
+        self.id
+    }
+
+    pub fn name(&self) -> String {
+        self.name.read().unwrap().clone()
+    }
+
+    pub fn set_name(&self, new_name: String) {
+        *self.name.write().unwrap() = new_name;
+    }
+
+    pub fn addresses(&self) -> Vec<IpNetwork> {
+        self.routes.read().unwrap().iter().collect()
+    }
+
+    // returns current TunDevice associated with the peer or an ErrorKind::NetworkDown error if interface was dropped
+    fn get_device(&self) -> std::io::Result<Arc<TunDevice>> {
+        use std::io::{Error, ErrorKind};
+        self.device.upgrade().ok_or_else(|| {
+            Error::new(
+                ErrorKind::NetworkDown,
+                "tun device is unavailable (was closed?)",
+            )
         })
     }
 
-    pub async fn run(self: &Arc<Peer>) {
-        self.clone().forward().await;
-        self.listen().await;
+    fn get_routing_table(&self) -> std::io::Result<Arc<PeerRoutingTable>> {
+        use std::io::{Error, ErrorKind};
+        self.routing_table
+            .upgrade()
+            .ok_or_else(|| Error::new(ErrorKind::NetworkDown, "routing table is unavailable"))
     }
 
-    // forwards bytes from `to_peer_rx` to the peer, and automatically connects to it
-    async fn forward(self: Arc<Self>) {
+    // not really thread-safe yet, do not run concurrently
+    pub async fn add_prefix(self: &Arc<Self>, prefix: IpNetwork) -> std::io::Result<()> {
+        let device = self.get_device()?;
+        let routing = device.routing()?;
+        let routing_table = self.get_routing_table()?;
+
+        // todo: improve error context
+        routing.add(&prefix).await?;
+        routing_table.insert(prefix, self.clone());
+        self.routes.write().unwrap().insert(prefix);
+
+        Ok(())
+    }
+
+    pub fn set_connection(&self, conn: Connection) {
+        self.receive_packets(conn.clone());
+
+        if let Some(old) = self.connection.write().unwrap().replace(conn) {
+            warn!("old connection {} was replaced for {self}", old.stable_id());
+            old.close(0u8.into(), b"you got replaced bro");
+        }
+
+        self.send_queued_packets();
+    }
+
+    fn receive_packets(&self, conn: Connection) {
+        let routes = self.routes.clone();
+        let mut writer = match self.device.upgrade() {
+            Some(device) => device.writer(),
+            None => {
+                error!("unable to receive packets from {self} since tun device is unavailable");
+                return;
+            }
+        };
+
         tokio::spawn(async move {
-            let mut to_peer_rx = self.to_peer_rx.clone();
-            while let Some(bytes) = to_peer_rx.next().await {
-                // todo: cache connection reference to prevent unnecessary clones
-                match self.get_connection().await {
-                    Ok(conn) => {
-                        if let Err(e) = self.send(&conn, bytes) {
-                            eprintln!("send to {} error: {:?}", self, e);
-                        }
-                    }
+            while let Ok(bytes) = conn.read_datagram().await {
+                // before forwarding to the interface, check if packet has correct source ip
+                let packet = match IpSlice::from_slice(&bytes) {
+                    Ok(packet) => packet,
                     Err(e) => {
-                        let dropped = utils::drain(&mut to_peer_rx).await + 1; // drop existing packet since connection failed
-                        eprintln!(
-                            "connect to {} error (dropped {} packets): {:?}",
-                            self, dropped, e
+                        error!(
+                            "received bad packet ({} bytes) from peer {}: {e}",
+                            bytes.len(),
+                            conn.remote_id().fmt_short()
                         );
+                        continue;
                     }
+                };
+
+                let src: IpNetwork = packet.source_addr().into();
+                if !routes.read().unwrap().get_lpm(&src).is_some() {
+                    warn!(
+                        "peer {} sent a packet with source {}, but isn't allowed",
+                        conn.remote_id().fmt_short(),
+                        src
+                    );
+                    continue;
+                }
+
+                // good, packet is validated and ready to go
+                let _ = writer.send(bytes).await;
+            }
+
+            if let Some(reason) = conn.close_reason() {
+                match reason {
+                    ConnectionError::LocallyClosed => {}
+                    reason => warn!(
+                        "connection with {} was closed due: {reason}",
+                        conn.remote_id().fmt_short()
+                    ),
                 }
             }
         });
     }
 
-    // sends a datagram or drops it, and handles TooLarge error
-    fn send(&self, conn: &Connection, bytes: Bytes) -> Result<(), SendDatagramError> {
-        if let Some(max) = conn.max_datagram_size() {
-            if bytes.len() > max {
-                self.handle_too_big(bytes, max);
-                return Ok(());
-            }
+    pub fn send(&self, bytes: Bytes) -> Result<(), SendError> {
+        if let Some(conn) = self.connection.read().unwrap().clone() {
+            return self.handle_send(bytes, conn);
         }
 
-        conn.send_datagram(bytes)
+        self.connect_and_send_later(bytes);
+        Ok(())
     }
 
-    // handles too big packet either by PMTU or by sending fragmented packet
-    fn handle_too_big(&self, bytes: Bytes, max: usize) {
-        let ip = match IpSlice::from_slice(&bytes[..]) {
-            Ok(ip) => ip,
-            Err(e) => {
-                eprintln!("send to {} bad packet: {:?}", self, e);
-                return;
-            }
-        };
+    fn handle_send(&self, bytes: Bytes, conn: Connection) -> Result<(), SendError> {
+        if let Err(err) = conn.send_datagram(bytes.clone()) {
+            match err {
+                SendDatagramError::ConnectionLost(err) => {
+                    // remove connection if it wasn't replaced
+                    self.connection
+                        .write()
+                        .unwrap()
+                        .take_if(|old| old.stable_id() == conn.stable_id());
 
-        let header = ip.header();
-
-        let dont_fragment = match header {
-            IpHeadersSlice::Ipv4(h, _) => h.dont_fragment(),
-            _ => true, // ipv6 routers don't fragment packets
-        };
-
-        if dont_fragment {
-            let buf = utils::fragmentation_needed_response(&ip, &bytes, max);
-            let _ = self.to_network_tx.send(buf.freeze());
-        } else {
-            eprintln!(
-                "todo: send fragmented packet to {} {:?} (len: {} max: {})",
-                ip.destination_addr(),
-                ip.payload_ip_number().keyword_str(),
-                bytes.len(),
-                max
-            );
-        }
-    }
-
-    // listens for datagrams for stored internally connection,
-    // automatically uses latest connection if previous one was closed
-    async fn listen(&self) {
-        loop {
-            while let Some(conn) = self.try_get_connection() {
-                while let Ok(bytes) = conn.read_datagram().await {
-                    match IpSlice::from_slice(&bytes[..]) {
-                        Ok(_) => {
-                            // todo ip filtering
-                            let _ = self.to_network_tx.send(bytes).is_err();
-                        }
-                        Err(e) => eprintln!("bad packet from {}: {:?}", self, e),
-                    }
-                }
-
-                // usually when `read_datagram` fails, it means that connection has failed
-                if let Some(err) = conn.close_reason() {
-                    match err {
-                        ConnectionError::LocallyClosed => {}
-                        e => eprintln!("connection error with {}: {:?}", self, e),
-                    }
-                } else {
-                    eprintln!(
-                        "connection to {} for some reason failed without a reason",
-                        self
+                    debug!(
+                        "send to {} failed due connection lost, retrying: {err:?}",
+                        conn.remote_id().fmt_short()
                     );
+                    return self.send(bytes);
+                }
+                SendDatagramError::TooLarge => {
+                    return Err(SendError::TooLarge(
+                        conn.max_datagram_size().unwrap_or(0),
+                        bytes,
+                    ));
+                }
+                // Some other datagram error, just forward
+                err => return Err(err.into()),
+            }
+        }
+        Ok(())
+    }
+
+    fn connect_and_send_later(&self, bytes: Bytes) {
+        // create a queue if it does not exist and push bytes
+        self.send_queue
+            .lock()
+            .unwrap()
+            .get_or_insert_with(|| AllocRingBuffer::new(32))
+            .enqueue(bytes);
+
+        let _ = self.connection_request.try_send(());
+    }
+
+    fn send_queued_packets(&self) {
+        let Some(mut queue) = self.send_queue.lock().unwrap().take() else {
+            return;
+        };
+
+        let mut too_big = Vec::new();
+
+        debug!("sending {} queued packets to {self}", queue.len());
+        while let Some(bytes) = queue.dequeue() {
+            if let Err(e) = self.send(bytes) {
+                match e {
+                    SendError::TooLarge(mtu, bytes) => {
+                        if let Some(payload) = utils::fragmentation_needed_response(&bytes, mtu) {
+                            too_big.push(payload);
+                        }
+                    }
+                    SendError::Other(err) => error!("send queued to {self} failed: {err}"),
                 }
             }
-
-            // there is no connections right now, wait until one is available
-            self.on_connection_change.notified().await;
-            // todo: shutdown
-        }
-    }
-
-    // stores given connection internally, and closes old one
-    pub fn accept(&self, conn: Arc<Connection>) {
-        if let Some(old) = self.conn.swap(Some(conn)) {
-            old.close(VarInt::from_u32(0), b"outdated");
         }
 
-        self.on_connection_change.notify_one();
-    }
+        if !too_big.is_empty() {
+            debug!(
+                "{} of those queued packets were too big for {self}",
+                too_big.len()
+            );
 
-    // gets current non-closed connection or tries to make a connection
-    pub async fn get_connection(&self) -> Result<Arc<Connection>, ConnectError> {
-        if let Some(conn) = self.try_get_connection() {
-            return Ok(conn);
-        }
+            let Some(mut writer) = self.device.upgrade().map(|d| d.writer()) else {
+                return;
+            };
 
-        match self.endpoint.connect(self.id, ALPN).await {
-            Ok(conn) => {
-                let conn = Arc::new(conn);
-                self.accept(conn.clone());
-                Ok(conn)
-            }
-            Err(e) => Err(e),
-        }
-    }
-
-    // gets current non-closed connection
-    pub fn try_get_connection(&self) -> Option<Arc<Connection>> {
-        self.conn
-            .load_full()
-            .filter(|conn| conn.close_reason().is_none())
-    }
-}
-
-impl PartialEq<Ipv4Addr> for Peer {
-    fn eq(&self, other: &Ipv4Addr) -> bool {
-        self.ipv4.eq(other)
-    }
-}
-
-impl PartialEq<Ipv6Addr> for Peer {
-    fn eq(&self, other: &Ipv6Addr) -> bool {
-        self.ipv6.eq(other)
-    }
-}
-
-impl PartialEq<IpAddr> for Peer {
-    fn eq(&self, other: &IpAddr) -> bool {
-        match other {
-            IpAddr::V4(addr) => self == addr,
-            IpAddr::V6(addr) => self == addr,
+            tokio::spawn(async move {
+                for bytes in too_big {
+                    let _ = writer.send(bytes).await;
+                }
+            });
         }
     }
 }
 
-impl Display for Peer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Peer({})", &self.id.to_z32()[..8])
+impl fmt::Display for Peer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Peer({:?})", &self.name.read().unwrap())
     }
+}
+
+#[derive(Error, Debug)]
+pub enum SendError {
+    #[error("packet is too big, current mtu is {0}")]
+    TooLarge(usize, Bytes),
+
+    #[error(transparent)]
+    Other(#[from] SendDatagramError),
 }

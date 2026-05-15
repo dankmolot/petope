@@ -1,13 +1,20 @@
-use std::borrow::Cow;
-use crate::{config::Config, peer::ALPN, peer_addr::PeerAddr, router::Router};
+use std::{borrow::Cow, net::IpAddr, sync::Arc};
+
+use crate::{
+    config::Config,
+    network::{ALPN, Network},
+    tun::TunDevice,
+};
 use anyhow::{Context, Result};
 use clap::Parser;
-use iroh::{Endpoint, PublicKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
+use dashmap::DashSet;
+use iroh::{Endpoint, SecretKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
+use log::info;
 
 mod config;
+mod network;
 mod peer;
-mod peer_addr;
-mod router;
+mod routing_table;
 mod tun;
 mod utils;
 
@@ -20,46 +27,115 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
     configure_logging();
 
+    let cli = Cli::parse();
     let (secret_key, config) = Config::load(&cli.config).context("load config")?;
-    let addr_filter = create_addr_filter(secret_key.public());
+
+    info!("your id: {}", secret_key.public());
 
     let rt = runtime()?;
     rt.block_on(async move {
-        let endpoint = Endpoint::builder(presets::N0)
-            .secret_key(secret_key)
-            .alpns(vec![ALPN.to_vec()])
-            .addr_filter(addr_filter)
-            .bind()
+        let network = create_network(config, secret_key)
             .await
-            .context("bind an endpoint")?;
+            .context("create network")?;
 
-        let router = Router::new(&config, endpoint).context("Router::new")?;
+        let addrs: Vec<String> = network
+            .local_addrs()
+            .iter()
+            .map(|v| v.to_string())
+            .collect();
+        info!(
+            "{} if={} addresses={:?}",
+            &network,
+            network.device_name(),
+            addrs
+        );
 
-        router.run().await
+        for p in network.peers() {
+            let addrs: Vec<String> = p.addresses().iter().map(|v| v.to_string()).collect();
+            info!(" - {} id={} addresses={:?}", &p, p.id().fmt_short(), addrs)
+        }
+
+        network.run();
+
+        tokio::signal::ctrl_c().await?;
+        info!("bye bye");
+
+        network.endpoint().close().await;
+
+        Ok(())
     })
 }
 
-fn create_addr_filter(id: PublicKey) -> AddrFilter {
-    let addr = PeerAddr::from(id);
-    AddrFilter::new(move |addrs| Cow::Owned(addrs.iter().filter(|a| match a {
-        TransportAddr::Ip(socket) => addr != socket.ip(),
-        _ => true
-    }).cloned().collect()))
+async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Network> {
+    let blocked_addrs = Arc::new(DashSet::new());
+
+    let endpoint = Endpoint::builder(presets::N0)
+        .secret_key(secret_key)
+        .alpns(vec![ALPN.to_vec()])
+        .addr_filter(create_addr_filter(blocked_addrs.clone()))
+        .bind()
+        .await
+        .context("bind an endpoint")?;
+
+    let name = tun::get_device_name().context("get device name")?;
+    let device = TunDevice::create(&name, None)
+        .await
+        .context("create device")?;
+
+    let network = Network::new(cfg.name, endpoint, device);
+
+    for addr in cfg.addresses {
+        blocked_addrs.insert(addr.ip());
+        network.add_local_addr(addr).context("add local addr")?;
+    }
+
+    for peer in cfg.peers {
+        let p = network.create_peer(peer.id);
+
+        if let Some(name) = peer.name {
+            p.set_name(name);
+        }
+
+        for addr in peer.addresses {
+            p.add_prefix(addr)
+                .await
+                .with_context(|| format!("add prefix {} to peer {}", addr, &p))?;
+        }
+    }
+
+    Ok(network)
 }
 
 fn configure_logging() {
     use tracing_subscriber::EnvFilter;
 
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("petope=trace".parse().unwrap()))
-        .try_init().unwrap();
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive("petope=trace".parse().unwrap()),
+        )
+        .try_init()
+        .unwrap();
 }
 
 fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
+}
+
+fn create_addr_filter(blocked: Arc<DashSet<IpAddr>>) -> AddrFilter {
+    AddrFilter::new(move |addrs| {
+        Cow::Owned(
+            addrs
+                .iter()
+                .filter(|a| match a {
+                    TransportAddr::Ip(a) => !blocked.contains(&a.ip()),
+                    _ => true,
+                })
+                .cloned()
+                .collect(),
+        )
+    })
 }
