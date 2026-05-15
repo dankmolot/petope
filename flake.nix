@@ -7,7 +7,12 @@
   };
 
   outputs =
-    { nixpkgs, flake-utils, rust-overlay, ... }:
+    {
+      nixpkgs,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let

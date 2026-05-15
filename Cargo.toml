@@ -15,12 +15,9 @@ net-route = "0.4.6"
 serde = "1"
 toml_edit = { version = "0.25", features = ["serde"] }
 base64 = "0.22"
-zeroize = "1"
 getifs = "0.5"
 futures = "0.3"                                                     # unfortunately for SinkExt api
-ring-channel = "0.12"
 dashmap = "6"
-arc-swap = "1"
 log = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ipnetwork = { version = "0.20", features = ["serde"] }
