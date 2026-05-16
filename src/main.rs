@@ -36,33 +36,34 @@ fn main() -> Result<()> {
 
     let rt = runtime()?;
     rt.block_on(async move {
-        let network = create_network(config, secret_key)
-            .await
-            .context("create network")?;
+        TunDevice::test();
+        // let network = create_network(config, secret_key)
+        //     .await
+        //     .context("create network")?;
 
-        let addrs: Vec<String> = network
-            .local_addrs()
-            .iter()
-            .map(|v| v.to_string())
-            .collect();
-        info!(
-            "{} if={} addresses={:?}",
-            &network,
-            network.device_name(),
-            addrs
-        );
+        // let addrs: Vec<String> = network
+        //     .local_addrs()
+        //     .iter()
+        //     .map(|v| v.to_string())
+        //     .collect();
+        // info!(
+        //     "{} if={} addresses={:?}",
+        //     &network,
+        //     network.device_name(),
+        //     addrs
+        // );
 
-        for p in network.peers() {
-            let addrs: Vec<String> = p.addresses().iter().map(|v| v.to_string()).collect();
-            info!(" - {} id={} addresses={:?}", &p, p.id().fmt_short(), addrs)
-        }
+        // for p in network.peers() {
+        //     let addrs: Vec<String> = p.addresses().iter().map(|v| v.to_string()).collect();
+        //     info!(" - {} id={} addresses={:?}", &p, p.id().fmt_short(), addrs)
+        // }
 
-        network.run();
+        // network.run();
 
         tokio::signal::ctrl_c().await?;
         info!("bye bye");
 
-        network.endpoint().close().await;
+        // network.endpoint().close().await;
 
         Ok(())
     })
@@ -120,7 +121,7 @@ fn configure_logging() {
 }
 
 fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
-    tokio::runtime::Builder::new_current_thread()
+    tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
 }

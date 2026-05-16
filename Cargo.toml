@@ -24,3 +24,4 @@ ipnetwork = { version = "0.20", features = ["serde"] }
 prefix-trie = { version = "0.8", features = ["ipnetwork"] }
 ringbuffer = "0.16.0"
 thiserror = "2.0.18"
+kanal = "0.1"
