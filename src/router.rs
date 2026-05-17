@@ -117,7 +117,7 @@ impl Router {
                     self.connection_lost(conn);
                     self.buffer_and_connect(peer, bytes).await;
                 }
-                e => error!("send to {peer} failed: {e:?}"),
+                e => error!("send to {peer} failed: {e}"),
             }
         }
     }
@@ -144,7 +144,7 @@ impl Router {
         let ip = match IpSlice::from_slice(&bytes) {
             Ok(ip) => ip,
             Err(e) => {
-                error!("bad packet from {peer}: {e:?}");
+                error!("bad packet from {peer}: {e}");
                 return;
             }
         };
@@ -207,7 +207,8 @@ impl Router {
                 let peer = self.get_peer(conn.remote_id());
                 match conn.close_reason() {
                     Some(ConnectionError::LocallyClosed) => {}
-                    e => warn!("lost connection with {peer}: {e:?}"),
+                    Some(e) => warn!("lost connection with {peer}: {e}"),
+                    _ => {}
                 }
             }
             _ => {}

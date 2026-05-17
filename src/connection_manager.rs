@@ -183,7 +183,7 @@ impl ConnectionManager {
             {
                 Ok(conn) => conn,
                 Err(e) => {
-                    error!("connect to {id} failed: {e:?}");
+                    error!("connect to {id} failed: {e}");
                     return;
                 }
             };
@@ -204,7 +204,7 @@ impl ConnectionManager {
                 Ok(conn) => {
                     let _ = tx.send(ConnectionManagerCommand::Accept(conn)).await;
                 }
-                Err(e) => error!("connect to {id} failed: {e:?}"),
+                Err(e) => error!("connect to {id} failed: {e}"),
             }
         });
     }

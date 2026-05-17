@@ -6,8 +6,6 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use clap::Parser;
-use core::fmt;
-use ipnetwork::IpNetwork;
 use iroh::{Endpoint, SecretKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
 use log::info;
 use petope_tun::TunBuilder;
