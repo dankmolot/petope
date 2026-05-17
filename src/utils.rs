@@ -1,9 +1,12 @@
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use etherparse::{Icmpv4Type, Icmpv6Type, IpSlice, PacketBuilder, icmpv4::DestUnreachableHeader};
-use ipnetwork::{Ipv4Network, Ipv6Network};
+use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use iroh::EndpointId;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::{
+    fmt::{self, Write},
+    net::{Ipv4Addr, Ipv6Addr},
+};
 
 pub const HOP_LIMIT: u8 = 64;
 
@@ -16,7 +19,7 @@ pub fn base64_decode(encoded: &str) -> Result<Vec<u8>, base64::DecodeError> {
 }
 
 pub fn ipv4_from_id(id: &EndpointId) -> Ipv4Network {
-    Ipv4Addr::new(100, id[0], id[1], id[2]).into()
+    Ipv4Addr::new(100, id[0], id[1], id[2].min(254).max(1)).into()
 }
 
 pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Network {
@@ -71,5 +74,21 @@ pub fn fragmentation_needed_response(payload: &[u8], mtu: usize) -> Option<Bytes
             builder.write(&mut writer, payload).unwrap(); // ipv6 does not care about payload size
             Some(writer.into_inner())
         }
+    }
+}
+
+pub struct Addresses<'a>(pub &'a [IpNetwork]);
+
+impl<'a> fmt::Display for Addresses<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_char('[')?;
+        for (i, addr) in self.0.iter().enumerate() {
+            if i != 0 {
+                f.write_str(", ")?;
+            }
+
+            write!(f, "{}", addr)?;
+        }
+        f.write_char(']')
     }
 }
