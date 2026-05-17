@@ -8,19 +8,13 @@ use std::{
     borrow::Borrow,
     collections::VecDeque,
     ops::{Deref, Range},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, mpsc},
     time::Duration,
 };
 use tun_rs::{
     AsyncDevice, DeviceBuilder, SyncDevice,
     async_framed::{BytesCodec, DeviceFramed, DeviceFramedRead, DeviceFramedWrite},
 };
-
-#[cfg(target_os = "macos")]
-static DEVICE_PREFIX: &str = "utun";
-
-#[cfg(not(target_os = "macos"))]
-static DEVICE_PREFIX: &str = "petope";
 
 pub struct TunDevice {
     pub name: String,
@@ -84,22 +78,23 @@ impl TunDevice {
 
     pub fn test() {
         let (tx1, rx1) = TunDevice::chan();
-        let (tx2, rx2) = TunDevice::chan();
+        // let (tx2, rx2) = TunDevice::chan();
 
-        TunDevice::testdev("testing1", "100.0.0.1", tx2, rx1);
-        TunDevice::testdev("testing2", "100.0.0.2", tx1, rx2);
+        TunDevice::testdev("utun10", "100.0.0.1", tx1, rx1);
+        // TunDevice::testdev("testing2", "100.0.0.2", tx1, rx2);
     }
 
-    fn chan() -> (kanal::Sender<Bytes>, kanal::Receiver<Bytes>) {
-        kanal::bounded(32)
+    fn chan() -> (mpsc::Sender<Bytes>, mpsc::Receiver<Bytes>) {
+        mpsc::channel()
     }
 
-    fn testdev(name: &str, addr: &str, tx: kanal::Sender<Bytes>, rx: kanal::Receiver<Bytes>) {
+    fn testdev(name: &str, addr: &str, tx: mpsc::Sender<Bytes>, rx: mpsc::Receiver<Bytes>) {
         let device = DeviceBuilder::new()
             .name(name)
             .mtu(1500)
             .layer(tun_rs::Layer::L3)
             .ipv4(addr, 32, None)
+            .with(|_opt| {})
             .build_sync()
             .unwrap();
 
@@ -121,14 +116,14 @@ impl TunDevice {
             .unwrap();
     }
 
-    fn recv(mut reader: TunReader<Arc<SyncDevice>>, tx: kanal::Sender<Bytes>) {
+    fn recv(mut reader: TunReader<Arc<SyncDevice>>, tx: mpsc::Sender<Bytes>) {
         loop {
             let bytes = reader.read().unwrap();
             tx.send(bytes.freeze()).unwrap();
         }
     }
 
-    fn send(dev: Arc<SyncDevice>, rx: kanal::Receiver<Bytes>) {
+    fn send(dev: Arc<SyncDevice>, rx: mpsc::Receiver<Bytes>) {
         loop {
             let bytes = rx.recv().unwrap();
             dev.send(&bytes).unwrap();
@@ -158,38 +153,6 @@ impl TunRouting<'_> {
     pub async fn remove(&self, target: &IpNetwork) -> std::io::Result<()> {
         self.handle.delete(&self.ip_to_route(target)).await
     }
-}
-
-// either returns interface name from config or finds first available interface name
-pub fn get_device_name_with_prefix(prefix: Option<&str>) -> Result<String> {
-    let prefix = prefix.unwrap_or(DEVICE_PREFIX);
-
-    // get all interfaces that start with the prefix
-    let interfaces = getifs::interfaces()
-        .context("get interfaces")?
-        .into_iter()
-        .filter(|i| i.name().starts_with(prefix))
-        .map(|i| i.name().clone())
-        .collect::<Vec<getifs::SmolStr>>();
-
-    for i in 0..100 {
-        let name = format!("{}{}", prefix, i);
-
-        // check if none of the interfaces have the name
-        if !interfaces.iter().any(|v| v.as_str() == name) {
-            return Ok(name);
-        }
-    }
-
-    bail!(
-        "unable to find an available tun device name with prefix {}, already {} interfaces exist",
-        prefix,
-        interfaces.len()
-    );
-}
-
-pub fn get_device_name() -> Result<String> {
-    get_device_name_with_prefix(None)
 }
 
 pub struct TunReader<T> {
@@ -223,6 +186,9 @@ where
                 "for some reason got 0 bytes",
             ));
         }
+
+        #[cfg(target_os = "macos")]
+        let mut buf = buf.split_off(tun_rs::PACKET_INFORMATION_LENGTH);
 
         Ok(buf.split())
     }
@@ -266,9 +232,10 @@ impl BufferArena {
         let old_capacity = self.cluster.capacity();
         self.cluster.reserve_exact(self.shards_batch);
         warn!(
-            "buffer cluster is too small; capacity: previous={old_capacity} allocated={} current={}",
+            "buffer cluster is too small; capacity: previous={old_capacity} allocated={} current={} bytes={}KB",
             self.cluster.len(),
             self.cluster.capacity(),
+            self.capacity_per_shard * self.cluster.capacity() / 1000
         );
 
         // since capacity was increased, fill out empty slots with buffers

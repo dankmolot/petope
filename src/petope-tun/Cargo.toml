@@ -1,0 +1,12 @@
+[package]
+name = "petope-tun"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tun-rs = { version = "2.8.3" }
+tokio = { version = "1", features = ["sync"] }
+bytes = "1"
+log = "0"
+getifs = "0.5"
+net-route = "0.4.6"
