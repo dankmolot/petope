@@ -143,7 +143,7 @@ fn configure_logging() {
 }
 
 fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
-    tokio::runtime::Builder::new_multi_thread()
+    tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
 }
