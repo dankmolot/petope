@@ -178,14 +178,16 @@ impl Router {
             }
         });
 
-        debug!("sending {} buffered messages to {peer}", queue.len());
+        if !queue.is_empty() {
+            debug!("sending {} buffered messages to {peer}", queue.len());
 
-        for bytes in queue {
-            if conn.close_reason().is_some() {
-                break;
+            for bytes in queue {
+                if conn.close_reason().is_some() {
+                    break;
+                }
+
+                self.send_datagram(peer.clone(), conn.clone(), bytes).await
             }
-
-            self.send_datagram(peer.clone(), conn.clone(), bytes).await
         }
     }
 
