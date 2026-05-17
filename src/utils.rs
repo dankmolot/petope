@@ -16,7 +16,7 @@ pub fn base64_decode(encoded: &str) -> Result<Vec<u8>, base64::DecodeError> {
 }
 
 pub fn ipv4_from_id(id: &EndpointId) -> Ipv4Network {
-    Ipv4Addr::new(100, id[0], id[1], id[2]).into()
+    Ipv4Addr::new(100, id[0], id[1], id[2].min(254).max(1)).into()
 }
 
 pub fn ipv6_from_id(id: &EndpointId) -> Ipv6Network {

@@ -94,6 +94,7 @@ impl Config {
 
         if config.addresses.is_empty() {
             config.addresses.push(utils::ipv4_from_id(&id).into());
+            config.addresses.push(utils::ipv6_from_id(&id).into());
         }
 
         for p in &mut config.peers {
@@ -103,6 +104,7 @@ impl Config {
 
             if p.addresses.is_empty() {
                 p.addresses.push(utils::ipv4_from_id(&p.id).into());
+                p.addresses.push(utils::ipv6_from_id(&p.id).into());
             }
         }
 
