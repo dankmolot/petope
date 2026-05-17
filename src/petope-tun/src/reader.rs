@@ -65,12 +65,15 @@ impl BufferArena {
         // no available buffers were found, try increasing cluster size
         let old_capacity = self.cluster.capacity();
         self.cluster.reserve_exact(self.shards_batch);
-        debug!(
-            "buffer cluster is too small; capacity: previous={old_capacity} allocated={} current={} bytes={}KB",
-            self.cluster.len(),
-            self.cluster.capacity(),
-            self.capacity_per_shard * self.cluster.capacity() / 1000
-        );
+
+        if !self.cluster.is_empty() {
+            debug!(
+                "buffer cluster is too small; capacity: previous={old_capacity} allocated={} current={} bytes={}KB",
+                self.cluster.len(),
+                self.cluster.capacity(),
+                self.capacity_per_shard * self.cluster.capacity() / 1000
+            );
+        }
 
         // since capacity was increased, fill out empty slots with buffers
         for _ in self.cluster.len()..self.cluster.capacity() {

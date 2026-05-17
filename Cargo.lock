@@ -2884,6 +2884,7 @@ dependencies = [
  "ipnetwork",
  "iroh",
  "log",
+ "petope-tun",
  "prefix-trie",
  "serde",
  "thiserror 2.0.18",

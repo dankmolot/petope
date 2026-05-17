@@ -24,3 +24,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 ipnetwork = { version = "0.20", features = ["serde"] }
 prefix-trie = { version = "0.8", features = ["ipnetwork"] }
 thiserror = "2.0.18"
+petope-tun = { path = "src/petope-tun" }

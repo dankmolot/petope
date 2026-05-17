@@ -1,21 +1,21 @@
-use std::{borrow::Cow, net::IpAddr, sync::Arc};
-
 use crate::{
     config::Config,
-    network::{ALPN, Network},
-    tun::TunDevice,
+    connection_manager::{ALPN, ConnectionManager},
+    router::{Router, RouterCommand},
 };
 use anyhow::{Context, Result};
 use clap::Parser;
-use dashmap::DashSet;
+use core::fmt;
+use ipnetwork::IpNetwork;
 use iroh::{Endpoint, SecretKey, TransportAddr, endpoint::presets, endpoint_info::AddrFilter};
 use log::info;
+use petope_tun::TunBuilder;
+use std::{borrow::Cow, net::IpAddr};
+use tokio::sync::mpsc;
 
 mod config;
-mod network;
-mod peer;
-mod routing_table;
-mod tun;
+mod connection_manager;
+mod router;
 mod utils;
 
 #[derive(Parser, Debug)]
@@ -36,77 +36,99 @@ fn main() -> Result<()> {
 
     let rt = runtime()?;
     rt.block_on(async move {
-        TunDevice::test();
-        // let network = create_network(config, secret_key)
-        //     .await
-        //     .context("create network")?;
-
-        // let addrs: Vec<String> = network
-        //     .local_addrs()
-        //     .iter()
-        //     .map(|v| v.to_string())
-        //     .collect();
-        // info!(
-        //     "{} if={} addresses={:?}",
-        //     &network,
-        //     network.device_name(),
-        //     addrs
-        // );
-
-        // for p in network.peers() {
-        //     let addrs: Vec<String> = p.addresses().iter().map(|v| v.to_string()).collect();
-        //     info!(" - {} id={} addresses={:?}", &p, p.id().fmt_short(), addrs)
-        // }
-
-        // network.run();
+        let endpoint = create_network(config, secret_key)
+            .await
+            .context("create network")?;
 
         tokio::signal::ctrl_c().await?;
         info!("bye bye");
 
-        // network.endpoint().close().await;
+        endpoint.close().await;
 
         Ok(())
     })
 }
 
-async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Network> {
-    let blocked_addrs = Arc::new(DashSet::new());
+async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Endpoint> {
+    let addr_filter = create_addr_filter(cfg.addresses.iter().map(|a| a.ip()).collect());
 
     let endpoint = Endpoint::builder(presets::N0)
         .secret_key(secret_key)
         .alpns(vec![ALPN.to_vec()])
-        .addr_filter(create_addr_filter(blocked_addrs.clone()))
+        .addr_filter(addr_filter)
         .bind()
         .await
         .context("bind an endpoint")?;
 
-    let name = tun::get_device_name().context("get device name")?;
-    let device = TunDevice::create(&name, None)
-        .await
-        .context("create device")?;
-
-    let network = Network::new(cfg.name, endpoint, device);
-
-    for addr in cfg.addresses {
-        blocked_addrs.insert(addr.ip());
-        network.add_local_addr(addr).context("add local addr")?;
+    let device = TunBuilder::new().build().context("build a tun device")?;
+    for addr in &cfg.addresses {
+        device
+            .add_local_addr(addr.ip(), addr.prefix())
+            .with_context(|| format!("add {} address to the tun device", addr))?;
     }
 
+    info!(
+        "network {} if={} addresses={:?}",
+        &cfg.name,
+        device.name()?,
+        fmt_addresses(cfg.addresses.iter()),
+    );
+
+    let (from_network_tx, mut from_network_rx) = mpsc::channel(8);
+    let (to_network_tx, to_network_rx) = mpsc::channel(8);
+    let (router_tx, router_rx) = mpsc::channel(8);
+    let (manager_tx, manager_rx) = mpsc::channel(8);
+
+    let mut router = Router::new(router_rx, to_network_tx, manager_tx);
+    let mut manager = ConnectionManager::new(manager_rx, router_tx.clone(), endpoint.clone());
+
+    let routing = device.routing().context("get routing handle")?;
     for peer in cfg.peers {
-        let p = network.create_peer(peer.id);
-
-        if let Some(name) = peer.name {
-            p.set_name(name);
-        }
-
-        for addr in peer.addresses {
-            p.add_prefix(addr)
+        for route in &peer.addresses {
+            routing
+                .add(route.ip(), route.prefix())
                 .await
-                .with_context(|| format!("add prefix {} to peer {}", addr, &p))?;
+                .context(format!("add route {route} to peer {peer}"))?;
         }
+
+        info!(
+            " - {peer} id={} addresses={:?}",
+            peer.id.fmt_short(),
+            fmt_addresses(peer.addresses.iter())
+        );
+
+        manager.allow_peer(peer.id);
+        router.add_peer(peer);
     }
 
-    Ok(network)
+    device.reader(from_network_tx);
+    device.writer(to_network_rx);
+
+    tokio::spawn(async move {
+        router.run().await;
+    });
+
+    tokio::spawn(async move {
+        manager.run().await;
+    });
+
+    tokio::spawn(async move {
+        while let Some(bytes) = from_network_rx.recv().await {
+            if router_tx
+                .send(RouterCommand::RoutePacket(bytes.freeze()))
+                .await
+                .is_err()
+            {
+                return;
+            }
+        }
+    });
+
+    Ok(endpoint)
+}
+
+fn fmt_addresses<'a>(addrs: impl Iterator<Item = &'a IpNetwork>) -> Vec<impl fmt::Debug> {
+    addrs.cloned().map(|a| a.to_string()).collect()
 }
 
 fn configure_logging() {
@@ -126,7 +148,7 @@ fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
         .build()
 }
 
-fn create_addr_filter(blocked: Arc<DashSet<IpAddr>>) -> AddrFilter {
+fn create_addr_filter(blocked: Vec<IpAddr>) -> AddrFilter {
     AddrFilter::new(move |addrs| {
         Cow::Owned(
             addrs

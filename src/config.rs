@@ -4,6 +4,7 @@ use ipnetwork::IpNetwork;
 use iroh::{EndpointId, PublicKey, SecretKey};
 use log::debug;
 use serde::Deserialize;
+use std::fmt;
 use toml_edit::{DocumentMut, de::from_document};
 
 #[derive(Deserialize, Debug, Clone)]
@@ -18,7 +19,8 @@ pub struct Config {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Peer {
-    pub name: Option<String>,
+    #[serde(default)]
+    pub name: String,
     pub id: EndpointId,
     #[serde(default, alias = "address")]
     pub addresses: Vec<IpNetwork>,
@@ -95,11 +97,31 @@ impl Config {
         }
 
         for p in &mut config.peers {
+            if p.name.is_empty() {
+                p.name = p.id.fmt_short().to_string();
+            }
+
             if p.addresses.is_empty() {
                 p.addresses.push(utils::ipv4_from_id(&p.id).into());
             }
         }
 
         Ok(config)
+    }
+}
+
+impl fmt::Display for Peer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Peer({:?})", &self.name)
+    }
+}
+
+impl From<EndpointId> for Peer {
+    fn from(id: EndpointId) -> Self {
+        Self {
+            id,
+            name: id.fmt_short().to_string(),
+            addresses: Vec::new(),
+        }
     }
 }
