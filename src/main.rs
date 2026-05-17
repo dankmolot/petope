@@ -2,6 +2,7 @@ use crate::{
     config::Config,
     connection_manager::{ALPN, ConnectionManager},
     router::{Router, RouterCommand},
+    utils::Addresses,
 };
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -68,10 +69,10 @@ async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Endpoint> 
     }
 
     info!(
-        "network {} if={} addresses={:?}",
+        "network {} if={} addresses={}",
         &cfg.name,
         device.name()?,
-        fmt_addresses(cfg.addresses.iter()),
+        Addresses(&cfg.addresses),
     );
 
     let (from_network_tx, mut from_network_rx) = mpsc::channel(8);
@@ -88,13 +89,13 @@ async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Endpoint> 
             routing
                 .add(route.ip(), route.prefix())
                 .await
-                .context(format!("add route {route} to peer {peer}"))?;
+                .context(format!("add route {route} to {peer}"))?;
         }
 
         info!(
-            " - {peer} id={} addresses={:?}",
+            " - {peer} id={} addresses={}",
             peer.id.fmt_short(),
-            fmt_addresses(peer.addresses.iter())
+            Addresses(&peer.addresses)
         );
 
         manager.allow_peer(peer.id);
@@ -125,10 +126,6 @@ async fn create_network(cfg: Config, secret_key: SecretKey) -> Result<Endpoint> 
     });
 
     Ok(endpoint)
-}
-
-fn fmt_addresses<'a>(addrs: impl Iterator<Item = &'a IpNetwork>) -> Vec<impl fmt::Debug> {
-    addrs.cloned().map(|a| a.to_string()).collect()
 }
 
 fn configure_logging() {

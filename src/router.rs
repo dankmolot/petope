@@ -1,4 +1,8 @@
-use crate::{config::Peer, connection_manager::ConnectionManagerCommand, utils};
+use crate::{
+    config::Peer,
+    connection_manager::ConnectionManagerCommand,
+    utils::{self, Addresses},
+};
 use bytes::Bytes;
 use etherparse::IpSlice;
 use ipnetwork::IpNetwork;
@@ -51,7 +55,7 @@ impl Router {
     pub fn add_peer(&mut self, peer: Peer) {
         let peer = Arc::new(peer);
         if let Some(current) = self.peers.get(&peer.id) {
-            error!("peer {current} already exists (tried adding {peer})");
+            error!("{current} already exists (tried adding {peer})");
             return;
         }
 
@@ -59,7 +63,7 @@ impl Router {
 
         for route in &peer.addresses {
             if let Some(old) = self.routes.insert(*route, peer.clone()) {
-                error!("peer {peer} has conflicting route {route} with peer {old}");
+                error!("{peer} has conflicting route {route} with {old}");
             }
         }
     }
@@ -148,8 +152,8 @@ impl Router {
         let src = ip.source_addr();
         if !self.routes.get_lpm(&src.into()).is_some() {
             warn!(
-                "peer {peer} sent a packet with source {src} but isn't allowed! addresses={:?}",
-                &peer.addresses
+                "{peer} sent a packet with source {src} but isn't allowed! allowed={}",
+                Addresses(&peer.addresses)
             );
             return;
         }
@@ -161,7 +165,7 @@ impl Router {
         let peer = self.get_peer(conn.remote_id());
 
         if let Some(old) = self.connections.insert(conn.remote_id(), conn.clone()) {
-            warn!("connection with peer {peer} was replaced, some packets may be lost");
+            warn!("connection with {peer} was replaced, some packets may be lost");
             old.close(0u8.into(), b"outdated");
         }
 

@@ -1,9 +1,12 @@
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use etherparse::{Icmpv4Type, Icmpv6Type, IpSlice, PacketBuilder, icmpv4::DestUnreachableHeader};
-use ipnetwork::{Ipv4Network, Ipv6Network};
+use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use iroh::EndpointId;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::{
+    fmt::{self, Write},
+    net::{Ipv4Addr, Ipv6Addr},
+};
 
 pub const HOP_LIMIT: u8 = 64;
 
@@ -71,5 +74,21 @@ pub fn fragmentation_needed_response(payload: &[u8], mtu: usize) -> Option<Bytes
             builder.write(&mut writer, payload).unwrap(); // ipv6 does not care about payload size
             Some(writer.into_inner())
         }
+    }
+}
+
+pub struct Addresses<'a>(pub &'a [IpNetwork]);
+
+impl<'a> fmt::Display for Addresses<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_char('[')?;
+        for (i, addr) in self.0.iter().enumerate() {
+            if i != 0 {
+                f.write_str(", ")?;
+            }
+
+            write!(f, "{}", addr)?;
+        }
+        f.write_char(']')
     }
 }
