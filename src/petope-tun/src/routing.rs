@@ -20,12 +20,15 @@ impl TunRouting {
         })
     }
 
+    #[allow(unused)]
     pub fn with_table(mut self, table: u8) -> Self {
-        self.table = Some(table);
+        #[cfg(target_os = "linux")]
+        self.table.replace(table);
         self
     }
 
     fn route(&self, addr: IpAddr, prefix: u8) -> net_route::Route {
+        #[allow(unused_mut)]
         let mut r = net_route::Route::new(addr, prefix).with_ifindex(self.ifindex);
 
         #[cfg(target_os = "linux")]
